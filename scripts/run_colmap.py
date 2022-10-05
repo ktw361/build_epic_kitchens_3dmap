@@ -30,13 +30,14 @@ class Runner:
         os.makedirs(proj_dir, exist_ok=True)
 
         self.vid = vid
-        self.proj_dir = proj_dir
+        self.proj_dir = proj_dir  # e.g. './colmap_projects/P01_103'
         self.proj_file = proj_dir/'project.ini'
         self.database_path = proj_dir/'database.db'
         self.image_path = IMG_ROOT/f'{self.vid}'
         self.mask_path = MASK_ROOT/f'{self.vid}'
         self.sparse_dir = proj_dir/'sparse'
         self.dense_dir = proj_dir/'dense'
+        self.undistorted_dir = proj_dir/'undistorted'
         self.verbose = verbose
 
         # configs
@@ -82,7 +83,6 @@ class Runner:
             '--image_path', f'{self.image_path}',
         ]
         commands += self._pack_section_arguments([_ImageReader, _SiftExtraction])
-            
         if self.verbose:
             print(' '.join(commands))
 
@@ -91,7 +91,6 @@ class Runner:
             stdout=None if self.verbose else subprocess.PIPE, 
             stderr=None if self.verbose else subprocess.PIPE, 
             check=True, text=True)
-        
         if self.verbose:
             print(proc.stdout)
             print(proc.stderr)
@@ -104,15 +103,16 @@ class Runner:
         commands += self._pack_section_arguments([_SiftMatching])
         if self.verbose:
             print(' '.join(commands))
-
         proc = subprocess.run(
             commands, 
             stdout=None if self.verbose else subprocess.PIPE, 
             check=True, text=True)
-
         print(proc.stdout)
     
     def mapper_run(self):
+        """
+        This step is usually slowest.
+        """
         os.makedirs(self.sparse_dir, exist_ok=True)
         commands = [
             'colmap', 'mapper', 
@@ -120,7 +120,45 @@ class Runner:
             '--image_path', f'{self.image_path}',
             '--output_path', f'{self.sparse_dir}',
         ]
-        # commands += self._pack_section_arguments([_SiftMatching])
+        if self.verbose:
+            print(' '.join(commands))
+        proc = subprocess.run(
+            commands, 
+            stdout=None if self.verbose else subprocess.PIPE, 
+            check=True, text=True)
+        print(proc.stdout)
+    
+    def image_undistorter(self):
+        """
+        This step will copy lots of images
+        """
+        input_path = self.sparse_dir/'0'
+        commands = [
+            'colmap', 'image_undistorter', 
+            '--image_path', f'{self.image_path}',
+            '--input_path', f'{input_path}',
+            '--output_path', f'{self.undistorted_dir}',
+            '--copy_policy', 'copy',
+        ]
+        if self.verbose:
+            print(' '.join(commands))
+        proc = subprocess.run(
+            commands, 
+            stdout=None if self.verbose else subprocess.PIPE, 
+            stderr=None if self.verbose else subprocess.PIPE, 
+            check=True, text=True)
+        if self.verbose:
+            print(proc.stdout)
+            print(proc.stderr)
+        
+    def patch_match_stereo(self):
+        """
+        This step also takes very long.
+        """
+        commands = [
+            'colmap', 'patch_match_stereo', 
+            '--workspace_path', f'{self.undistorted_dir}',
+        ]
         if self.verbose:
             print(' '.join(commands))
 
@@ -129,28 +167,7 @@ class Runner:
             stdout=None if self.verbose else subprocess.PIPE, 
             check=True, text=True)
         print(proc.stdout)
-    
-    def image_undistorter(self):
-        commands = [
-            'colmap', 'image_undistorter', 
-            '--database_path', f'{self.database_path}',
-            '--image_path', f'{self.image_path}',
-        ]
-        commands += self._pack_section_arguments([_ImageReader, _SiftExtraction])
-            
-        if self.verbose:
-            print(' '.join(commands))
 
-        proc = subprocess.run(
-            commands, 
-            stdout=None if self.verbose else subprocess.PIPE, 
-            stderr=None if self.verbose else subprocess.PIPE, 
-            check=True, text=True)
-        
-        if self.verbose:
-            print(proc.stdout)
-            print(proc.stderr)
-        
     def auto_reconstruct(self):
         """ 
         The follows the automatic reconstruction command.
@@ -167,12 +184,13 @@ class Runner:
 
 
 def main():
-    runner = Runner('P01_101', init=True, verbose=True)
+    # runner = Runner('P01_01', init=True, verbose=True)
     # runner.extract_feature()
 
-    runner = Runner('P01_101', init=False, verbose=True)
+    runner = Runner('P01_01', init=False, verbose=True)
     # runner.sequential_matching()
-    runner.mapper_run()
+    # runner.mapper_run()
+    # runner.image_undistorter()
 
 if __name__ == '__main__':
     main()
