@@ -38,6 +38,7 @@ class Runner:
         self.sparse_dir = proj_dir/'sparse'
         self.dense_dir = proj_dir/'dense'
         self.undistorted_dir = proj_dir/'undistorted'
+        self.stereo_fused = proj_dir/'stereo_fused.ply'
         self.verbose = verbose
 
         # configs
@@ -111,7 +112,9 @@ class Runner:
     
     def mapper_run(self):
         """
-        This step is usually slowest.
+        This step is usually slow.
+
+        Outputs in `proj_dir/sparse/0`
         """
         os.makedirs(self.sparse_dir, exist_ok=True)
         commands = [
@@ -153,7 +156,13 @@ class Runner:
         
     def patch_match_stereo(self):
         """
-        This step also takes very long.
+        This step also takes very long. (e.g. 1.5h)
+
+        TODO: 
+            --geom_consistency true
+
+        Output two dirs:
+            `self.undistorted_dir/stereo/{depth_maps,normal_maps}/`
         """
         commands = [
             'colmap', 'patch_match_stereo', 
@@ -168,6 +177,28 @@ class Runner:
             check=True, text=True)
         print(proc.stdout)
 
+    def stereo_fusion(self):
+        """
+        Outputs:
+            `proj_dir/stereo_fused.ply`
+        """
+        commands = [
+            'colmap', 'stereo_fusion', 
+            '--workspace_path', f'{self.undistorted_dir}',
+            '--output_path', self.stereo_fused,
+        ]
+        if self.verbose:
+            print(' '.join(commands))
+
+        proc = subprocess.run(
+            commands, 
+            stdout=None if self.verbose else subprocess.PIPE, 
+            check=True, text=True)
+        print(proc.stdout)
+
+    def delaunay_mesher(self):
+        pass
+
     def auto_reconstruct(self):
         """ 
         The follows the automatic reconstruction command.
@@ -180,7 +211,8 @@ class Runner:
         self.image_undistorter()
         self.patch_match_stereo()
         self.stereo_fusion()
-        self.poinsson_mesher()  # self.delaunay_mesher()
+        self.delaunay_mesher()  
+        self.poinsson_mesher()
 
 
 def main():
@@ -191,6 +223,8 @@ def main():
     # runner.sequential_matching()
     # runner.mapper_run()
     # runner.image_undistorter()
+    # self.patch_match_stereo()
+    runner.stereo_fusion()
 
 if __name__ == '__main__':
     main()
