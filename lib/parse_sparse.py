@@ -47,40 +47,41 @@ class SparseProj:
                     data[f].append(res[i])
             return pd.DataFrame(data=data)
         
-        conn = sqlite3.connect(self.database_path)
-        cur = conn.cursor()
-        
-        cur.execute('SELECT * from cameras')
-        cameras = _make_df(
-            ['camera_id', 'model', 'width', 'height',
-             'params', 'prior_focal_length'], results=cur.fetchall())
+        with sqlite3.connect(self.database_path) as conn:
+            cur = conn.cursor()
+            
+            cur.execute('SELECT * from cameras')
+            cameras = _make_df(
+                ['camera_id', 'model', 'width', 'height',
+                'params', 'prior_focal_length'], results=cur.fetchall())
 
-        cur.execute('SELECT * from descriptors')
-        descriptors = _make_df(
-            ['image_id', 'rows', 'cols', 'data'],
-            results=cur.fetchall())
-        
-        cur.execute('SELECT * from images')
-        images = _make_df(
-            ['image_id', 'name', 'camera_id', 'prior_qw', 'prior_qx', 
-             'prior_qy', 'prior_qz', 'prior_tx', 'prior_ty', 'prior_tz'],
-            results=cur.fetchall())
+            cur.execute('SELECT * from descriptors')
+            descriptors = _make_df(
+                ['image_id', 'rows', 'cols', 'data'],
+                results=cur.fetchall())
+            
+            cur.execute('SELECT * from images')
+            images = _make_df(
+                ['image_id', 'name', 'camera_id', 'prior_qw', 'prior_qx', 
+                'prior_qy', 'prior_qz', 'prior_tx', 'prior_ty', 'prior_tz'],
+                results=cur.fetchall())
 
-        cur.execute('SELECT * from keypoints')
-        keypoints = _make_df(
-            ['image_id', 'rows', 'cols', 'data'],
-            results=cur.fetchall())
+            cur.execute('SELECT * from keypoints')
+            keypoints = _make_df(
+                ['image_id', 'rows', 'cols', 'data'],
+                results=cur.fetchall())
 
-        cur.execute('SELECT * from matches')
-        matches = _make_df(
-            ['pair_id', 'rows', 'cols', 'data'],
-            results=cur.fetchall())
+            cur.execute('SELECT * from matches')
+            matches = _make_df(
+                ['pair_id', 'rows', 'cols', 'data'],
+                results=cur.fetchall())
 
-        cur.execute('SELECT * from two_view_geometries')
-        two_view_geometries = _make_df(
-            ['pair_id', 'rows', 'cols', 'data',
-             'config', 'F', 'E', 'H', 'qvec', 'tvec'],
-            results=cur.fetchall())
+            cur.execute('SELECT * from two_view_geometries')
+            two_view_geometries = _make_df(
+                ['pair_id', 'rows', 'cols', 'data',
+                'config', 'F', 'E', 'H'],
+                #  'qvec', 'tvec'],
+                results=cur.fetchall())
         
         self._database = ColmapDB(**dict(
             cameras=cameras,
@@ -103,6 +104,7 @@ class SparseProj:
         return create_pcd_scene(
             points=self.pcd_pts,
             colors=self.pcd_clr, ret_pcd=True)
+
     
 if __name__ == '__main__':
     pass
