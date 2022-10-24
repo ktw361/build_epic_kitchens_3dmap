@@ -1,4 +1,6 @@
 **/__pycache__/
 
-colmap_projects/
 visor_data/*
+vocab_bins/
+
+projects/
