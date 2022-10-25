@@ -37,6 +37,10 @@ project
         └───P01_103
 ```
 
+## Reproducing results from Vadim
+
+- How to sample linearly? Ans: interval = int(max_frame_count / 1000), except P01_01.
+
 ## Colmap outputs
 
 Colmap projects (intermediate outputs) will be stored in `./colmap_projects`.
