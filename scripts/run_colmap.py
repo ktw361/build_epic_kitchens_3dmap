@@ -1,3 +1,4 @@
+import tqdm
 from typing import List
 import os
 from pathlib import Path
@@ -5,15 +6,11 @@ import shutil
 import subprocess
 
 from lib.config_utils import read_ini, write_ini
+from lib.utils import visor_to_colmap_mask
+from lib.constants import (
+    IMG_ROOT, MASK_ROOT, PROJ_ROOT,
+    IMAGEREADER, SIFTEXTRACTION, SIFTMATCHING)
 
-DATA = Path('./visor_data')
-IMG_ROOT = DATA/'sparse_images'
-MASK_ROOT = DATA/'sparse_masks'
-PROJ_ROOT = Path('./colmap_projects')
-
-_ImageReader = 'ImageReader'
-_SiftExtraction = 'SiftExtraction'
-_SiftMatching = 'SiftMatching'
 
 class Runner:
     
@@ -22,6 +19,7 @@ class Runner:
                  init=False,
                  init_from='configs/custom.ini',
                  proj_name=None,
+                 create_masks=False,
                  verbose=False):
         if proj_name is None:
             proj_dir = PROJ_ROOT/f'{vid}'
@@ -34,12 +32,18 @@ class Runner:
         self.proj_file = proj_dir/'project.ini'
         self.database_path = proj_dir/'database.db'
         self.image_path = IMG_ROOT/f'{self.vid}'
-        self.mask_path = MASK_ROOT/f'{self.vid}'
+        self.mask_path = proj_dir/'masks'
+        self.vocab_tree_path = proj_dir/'vocab_tree_path/vocab_tree_flickr100K_words256K.bin'
         self.sparse_dir = proj_dir/'sparse'
         self.dense_dir = proj_dir/'dense'
         self.undistorted_dir = proj_dir/'undistorted'
         self.stereo_fused = proj_dir/'stereo_fused.ply'
         self.verbose = verbose
+
+        if create_masks:
+            self.create_masks(
+                mask_src_dir=MASK_ROOT/f'{self.vid}',
+                mask_dst_dir=self.mask_path)
 
         # configs
         self.camera_model = 'SIMPLE_PINHOLE'
@@ -47,6 +51,18 @@ class Runner:
         if init:
             self.setup_project(init_from=init_from)
         self.cfg = read_ini(self.proj_file)
+    
+    def create_masks(self, mask_src_dir, mask_dst_dir):
+        """
+        Copy & convert masks in visor dir to local {mask_path}
+        """
+        if not os.path.exists(mask_dst_dir):
+            os.makedirs(mask_dst_dir, exist_ok=True)
+        print('Copying masks.')
+        for mask_path in tqdm.tqdm(os.listdir(mask_src_dir)):
+            src = mask_src_dir/mask_path
+            dst = mask_dst_dir/(mask_path.replace('.png', '.jpg.png'))
+            visor_to_colmap_mask(src, dst)
 
     def setup_project(self, init_from: str, use_colmap=False):
         if use_colmap:
@@ -65,7 +81,7 @@ class Runner:
         self.cfg = read_ini(self.proj_file)
         self.cfg['root']['image_path'] = str(self.image_path)
         self.cfg['root']['database_path'] = str(self.database_path)
-        self.cfg[_ImageReader]['camera_model'] = self.camera_model
+        self.cfg[IMAGEREADER]['camera_model'] = self.camera_model
         write_ini(self.cfg, self.proj_file)
     
     def _pack_section_arguments(self, sections: List[str]):
@@ -82,8 +98,9 @@ class Runner:
             'colmap', 'feature_extractor', 
             '--database_path', f'{self.database_path}',
             '--image_path', f'{self.image_path}',
+            '--ImageReader.mask_path', f'{self.mask_path}',
         ]
-        commands += self._pack_section_arguments([_ImageReader, _SiftExtraction])
+        commands += self._pack_section_arguments([IMAGEREADER, SIFTEXTRACTION])
         if self.verbose:
             print(' '.join(commands))
 
@@ -100,8 +117,9 @@ class Runner:
         commands = [
             'colmap', 'sequential_matcher', 
             '--database_path', f'{self.database_path}',
+            '--SequentialMatching.vocab_tree_path', f'{self.vocab_tree_path}',
         ]
-        commands += self._pack_section_arguments([_SiftMatching])
+        commands += self._pack_section_arguments([SIFTMATCHING])
         if self.verbose:
             print(' '.join(commands))
         proc = subprocess.run(
@@ -109,6 +127,20 @@ class Runner:
             stdout=None if self.verbose else subprocess.PIPE, 
             check=True, text=True)
         print(proc.stdout)
+
+    # def vocab_matching(self):
+    #     commands = [
+    #         'colmap', 'vocab_tree_builder', 
+    #         '--database_path', f'{self.database_path}',
+    #     ]
+    #     # commands += self._pack_section_arguments([_SiftMatching])
+    #     if self.verbose:
+    #         print(' '.join(commands))
+    #     proc = subprocess.run(
+    #         commands, 
+    #         stdout=None if self.verbose else subprocess.PIPE, 
+    #         check=True, text=True)
+    #     print(proc.stdout)
     
     def mapper_run(self):
         """
@@ -197,7 +229,21 @@ class Runner:
         print(proc.stdout)
 
     def delaunay_mesher(self):
+        """
+        colmap delaunay_mesher \
+            --input_path colmap/dense \
+            --output_path delaunay-output.ply
+
+        colmap poisson_mesher \
+            --input_path colmap/dense/fused.ply \
+            --output_path poisson-output.ply \
+        """
         pass
+
+    def compute_sparse(self):
+        self.extract_feature()
+        self.sequential_matching()
+        self.mapper_run()
 
     def auto_reconstruct(self):
         """ 
@@ -206,7 +252,7 @@ class Runner:
         """
         raise NotImplementedError
         self.extract_feature()
-        self.exhaustive_matcher()
+        self.sequential_matching()
         self.mapper_run()
         self.image_undistorter()
         self.patch_match_stereo()
@@ -217,14 +263,19 @@ class Runner:
 
 def main():
     # runner = Runner('P01_01', init=True, verbose=True)
-    # runner.extract_feature()
+    runner = Runner('P01_01', 
+                    init=True, 
+                    verbose=True,
+                    # create_masks=True,
+                    proj_name='P01_01_v0.2')
 
-    runner = Runner('P01_01', init=False, verbose=True)
-    # runner.sequential_matching()
-    # runner.mapper_run()
+    runner.extract_feature()
+    runner.sequential_matching()
+    # runner.vocab_matching()
+    runner.mapper_run()
     # runner.image_undistorter()
     # self.patch_match_stereo()
-    runner.stereo_fusion()
+    # runner.stereo_fusion()
 
 if __name__ == '__main__':
     main()
