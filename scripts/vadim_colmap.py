@@ -9,9 +9,9 @@ from lib.config_utils import read_ini, write_ini
 from lib.utils import visor_to_colmap_mask
 from lib.constants import (
     PROJ_ROOT,
-    VOCAB_256K, VOCAB_1M,
     IMAGEREADER, SIFTEXTRACTION, SIFTMATCHING,
 )
+from lib.constants import VOCAB_1M as VOCAB
 
 DATA = Path('/home/skynet/Zhifan/colmap_reconstructions_oxford')
 
@@ -38,6 +38,9 @@ class Runner:
         self.image_path = DATA/f'{self.vid}'/'frames'
         self.mask_path = DATA/f'{self.vid}'/'masks'
         self.sparse_dir = proj_dir/'sparse'
+        
+        self.log_fd = open(proj_dir/'run.log', 'w')
+        self.summary_file = proj_dir/'run.sum'
         self.verbose = verbose
 
         if create_masks:
@@ -99,13 +102,12 @@ class Runner:
             '--ImageReader.mask_path', f'{self.mask_path}',
         ]
         commands += self._pack_section_arguments([IMAGEREADER, SIFTEXTRACTION])
-        if self.verbose:
-            print(' '.join(commands))
+        print(' '.join(commands))
 
         proc = subprocess.run(
             commands, 
-            stdout=None if self.verbose else subprocess.PIPE, 
-            stderr=None if self.verbose else subprocess.PIPE, 
+            stdout=None if self.verbose else self.log_fd, 
+            stderr=None if self.verbose else self.log_fd, 
             check=True, text=True)
         if self.verbose:
             print(proc.stdout)
@@ -115,31 +117,32 @@ class Runner:
         commands = [
             'colmap', 'sequential_matcher', 
             '--database_path', f'{self.database_path}',
-            '--SequentialMatching.vocab_tree_path', f'{str(VOCAB_1M)}',
+            '--SequentialMatching.vocab_tree_path', f'{str(VOCAB)}',
         ]
         commands += self._pack_section_arguments([SIFTMATCHING])
-        if self.verbose:
-            print(' '.join(commands))
+        print(' '.join(commands))
         proc = subprocess.run(
             commands, 
-            stdout=None if self.verbose else subprocess.PIPE, 
+            stdout=None if self.verbose else self.log_fd, 
             check=True, text=True)
-        print(proc.stdout)
+        if self.verbose:
+            print(proc.stdout)
 
     def vocab_matching(self):
         commands = [
             'colmap', 'vocab_tree_matcher', 
             '--database_path', f'{self.database_path}',
-            '--VocabTreeMatching.vocab_tree_path', f'{str(VOCAB_1M)}',
+            '--VocabTreeMatching.vocab_tree_path', f'{str(VOCAB)}',
         ]
         commands += self._pack_section_arguments([SIFTMATCHING])
-        if self.verbose:
-            print(' '.join(commands))
+        print(' '.join(commands))
         proc = subprocess.run(
             commands, 
-            stdout=None if self.verbose else subprocess.PIPE, 
+            stdout=None if self.verbose else self.log_fd, 
             check=True, text=True)
-        print(proc.stdout)
+        if self.verbose:
+            print(proc.stdout)
+            print(proc.stderr)
     
     def mapper_run(self):
         """
@@ -154,26 +157,40 @@ class Runner:
             '--image_path', f'{self.image_path}',
             '--output_path', f'{self.sparse_dir}',
         ]
-        if self.verbose:
-            print(' '.join(commands))
+        print(' '.join(commands))
         proc = subprocess.run(
             commands, 
-            stdout=None if self.verbose else subprocess.PIPE, 
+            stdout=None if self.verbose else self.log_fd, 
+            check=True, text=True)
+        if self.verbose:
+            print(proc.stdout)
+            print(proc.stderr)
+    
+    def print_summary(self, model_id=0):
+        commands = [
+            'colmap', 'model_analyzer', 
+            '--path', f'{self.sparse_dir}/{model_id}',
+        ]
+        proc = subprocess.run(
+            commands, 
+            stdout=None, 
             check=True, text=True)
         print(proc.stdout)
+        print(proc.stderr)
 
     def compute_sparse(self):
         self.extract_feature()
-        self.vocab_matching()
-        # self.sequential_matching()
+        # self.vocab_matching()
+        self.sequential_matching()
         self.mapper_run()
+        self.print_summary()
 
 
 def main():
     runner = Runner('P01_01-s04.00-n00003dv', 
                     init=True, 
-                    verbose=True,
-                    proj_name='P01_01.ox.RADIAL.1M'
+                    verbose=False,
+                    proj_name='P01_01.ox.RADIAL.SEQ-1M.tune4'
                     )
     runner.compute_sparse()
 
