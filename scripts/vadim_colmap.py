@@ -9,6 +9,7 @@ from lib.config_utils import read_ini, write_ini
 from lib.utils import visor_to_colmap_mask
 from lib.constants import (
     PROJ_ROOT,
+    VOCAB_256K, VOCAB_1M,
     IMAGEREADER, SIFTEXTRACTION, SIFTMATCHING,
 )
 
@@ -36,18 +37,14 @@ class Runner:
         self.database_path = proj_dir/'database.db'
         self.image_path = DATA/f'{self.vid}'/'frames'
         self.mask_path = DATA/f'{self.vid}'/'masks'
-        self.vocab_tree_path = proj_dir/'vocab_tree_path/vocab_tree_flickr100K_words256K.bin'
         self.sparse_dir = proj_dir/'sparse'
         self.verbose = verbose
 
         if create_masks:
             raise NotImplementedError
-            self.create_masks(
-                mask_src_dir=MASK_ROOT/f'{self.vid}',
-                mask_dst_dir=self.mask_path)
 
         # configs
-        self.camera_model = 'SIMPLE_PINHOLE'
+        self.camera_model = 'SIMPLE_RADIAL'
 
         if init:
             self.setup_project(init_from=init_from)
@@ -118,7 +115,22 @@ class Runner:
         commands = [
             'colmap', 'sequential_matcher', 
             '--database_path', f'{self.database_path}',
-            '--SequentialMatching.vocab_tree_path', f'{self.vocab_tree_path}',
+            '--SequentialMatching.vocab_tree_path', f'{str(VOCAB_1M)}',
+        ]
+        commands += self._pack_section_arguments([SIFTMATCHING])
+        if self.verbose:
+            print(' '.join(commands))
+        proc = subprocess.run(
+            commands, 
+            stdout=None if self.verbose else subprocess.PIPE, 
+            check=True, text=True)
+        print(proc.stdout)
+
+    def vocab_matching(self):
+        commands = [
+            'colmap', 'vocab_tree_matcher', 
+            '--database_path', f'{self.database_path}',
+            '--VocabTreeMatching.vocab_tree_path', f'{str(VOCAB_1M)}',
         ]
         commands += self._pack_section_arguments([SIFTMATCHING])
         if self.verbose:
@@ -152,7 +164,8 @@ class Runner:
 
     def compute_sparse(self):
         self.extract_feature()
-        self.sequential_matching()
+        self.vocab_matching()
+        # self.sequential_matching()
         self.mapper_run()
 
 
@@ -160,12 +173,9 @@ def main():
     runner = Runner('P01_01-s04.00-n00003dv', 
                     init=True, 
                     verbose=True,
-                    proj_name='P01_01-s04.00-n00003dv-reprod'
+                    proj_name='P01_01.ox.RADIAL.1M'
                     )
-
-    runner.extract_feature()
-    runner.sequential_matching()
-    runner.mapper_run()
+    runner.compute_sparse()
 
 if __name__ == '__main__':
     main()

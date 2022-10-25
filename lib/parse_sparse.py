@@ -1,5 +1,6 @@
 from typing import NamedTuple
 from functools import cached_property
+from argparse import ArgumentParser
 import os
 import numpy as np
 import sqlite3
@@ -40,8 +41,7 @@ class SparseProj:
     @cached_property
     def summary(self):
         num_models = len(os.listdir(self.prefix))
-        num_observes = np.mean(
-            [sum(v.point3D_ids > 0) for v in self.images_registered])
+        observes = [sum(v.point3D_ids > 0) for v in self.images_registered]
 
         track_lens, errors = [], []
         for v in self.points_raw:
@@ -52,14 +52,26 @@ class SparseProj:
             'reg_images': len(self.images_registered),
             'reproj_error': np.mean(errors),
             'track_length': np.mean(track_lens),
-            'obs_per_img': num_observes,
+            'obs_per_img': np.mean(observes),
+            'total_obs': np.sum(observes),
             'num_models': num_models,
         }
         return r
     
     def print_summary(self):
-        for k, v in self.summary.items():
-            print(f'{k}\t=\t{v:.3f}')
+        """ Mimic the behavior of `colmap model_analyzer` """
+        s = self.summary
+        print(
+            f'Num Models:\t{s["num_models"]}\n'
+            f'Cameras:\t{len(self.cameras_raw)}\n'
+            # f'Images:\t?'
+            f'Registered Images:\t{s["reg_images"]}\n'
+            f'Points:\t{len(self.points_raw)}\n'
+            f'Observations:\t{s["total_obs"]}\n'
+            f'Mean track length:\t{s["track_length"]:.6f}\n'
+            f'Mean observations per image:\t{s["obs_per_img"]:.6f}\n'
+            f'Mean reprojection error:\t{s["reproj_error"]:.6f}px'
+        )
     
     @cached_property
     def database(self):
@@ -130,6 +142,24 @@ class SparseProj:
             points=self.pcd_pts,
             colors=self.pcd_clr, ret_pcd=True)
 
+
+def parse_args():
+    parser = ArgumentParser()
+    parser.add_argument('proj_dir')
+    return parser.parse_args()
     
 if __name__ == '__main__':
-    pass
+    import subprocess
+    args = parse_args()
+    use_colmap = True
+    if not use_colmap:
+        proj = SparseProj(args.proj_dir)
+        proj.print_summary()
+    else:
+        proc = subprocess.run(
+            [
+                'colmap', 'model_analyzer',
+                '--path', f'{args.proj_dir}/sparse/0'
+            ], 
+            stdout=None, 
+            check=True, text=True)
