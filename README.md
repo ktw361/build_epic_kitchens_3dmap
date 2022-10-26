@@ -40,11 +40,34 @@ project
         └───P01_103
 ```
 
-## Reproducing results from Vadim
+## Image resolutions
+
+Classify into 4 categories:
+- vadim: 480 x 270
+- small: 456 x 256
+- medium: 854 x 480
+- large: 1920 x 1080
+
+Resolutions from different sources
+- VISOR image: 1920 x 1080
+- VISOR mask: 854 x 480
+- Vadim copied: 480 x 270
+- epic_rgb_frames: 456 x 256
+
+# Type of masks
+- No mask
+- Simple mask, i.e. Vadim's mask
+- Dynamic mask, i.e. VISOR mask but exclude unique objects
+- VISOR mask (VISOR FULL mask)
+
+unique_objects = 
+    ['tap', 'fridge', 'hob', 'bin', 'oven', 'sink', 'dishwasher', 'freezer', 'machine washing', 'extractor fan']
+
+# Reproducing results from Vadim
 
 - How to sample linearly? Ans: interval = int(max_frame_count / 1000), except P01_01.
 
-## Colmap outputs
+# Colmap outputs
 
 Colmap projects (intermediate outputs) will be stored in `./projects`.
 
