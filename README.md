@@ -22,24 +22,23 @@ project
     │   └───P01_103-accel.csv
     │   └───P01_103-gyro.csv
     │   └───...
-    └───sparse_images_medium  (854 x 480)
-    └───sparse_images  (1920 x 1080)
+    └───sparse_images_medium    (854 x 480)
+    └───sparse_images           (VISOR origin, 1920 x 1080)
     │   └───P01_103
     │   │  └───P01_103_frame_0000000140.jpg
     │   │  └───P01_103_frame_0000000298.jpg
     │   │  └───...
     │   └───P01_104
     │
-    └───sparse_masks (854 x 480)
+    └───sparse_binary_masks_medium  (854 x 480)
+    └───sparse_binary_masks         (1920 x 1080)
+    └───sparse_masks                (VISOR origin, Colored 854 x 480)
         └───P01_103
         │   └───P01_103_frame_0000000140.png
         │   └───P01_103_frame_0000000298.png
         │   └───...
         └───P01_103
 ```
-
-- sparse_binary_masks: contains mask of size (1920, 1080)
-- sparse_images_medium: resized version of images (854 x 480)
 
 ## Reproducing results from Vadim
 
