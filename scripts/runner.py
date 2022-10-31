@@ -10,7 +10,9 @@ import subprocess
 from lib.config_utils import read_ini, write_ini
 from lib.constants import (
     PROJ_ROOT,
-    IMAGEREADER, SIFTEXTRACTION, SIFTMATCHING, VOCABTREEMATCHING, MAPPER,
+    IMAGEREADER, SIFTEXTRACTION, 
+    SIFTMATCHING, VOCABTREEMATCHING, SEQUENTIALMATCHING,
+    MAPPER,
 )
 from lib.constants import VOCAB_32K, VOCAB_256K, VOCAB_1M
 
@@ -145,6 +147,7 @@ class Runner:
             commands += ['--SequentialMatching.vocab_tree_path', 
                          f'{self.vocab_tree}']
         commands += self._pack_section_arguments([SIFTMATCHING])
+        commands += self._pack_section_arguments([SEQUENTIALMATCHING])
         print(' '.join(commands), file=self.log_fd)
         proc = subprocess.run(
             commands, 
@@ -225,7 +228,6 @@ class Runner:
 
 def main():
     args = parse_args()
-    print(args.no_extra_name)
     if args.no_extra_name:
         proj_name = args.proj_name
     else:
@@ -244,8 +246,8 @@ def main():
         matcher = 'vocab'
 
     runner = Runner(
-        images_path=args.images,
-        masks_path=args.masks,
+        images_path=os.path.abspath(args.images),
+        masks_path=os.path.abspath(args.masks),
         proj_name=proj_name,
         matcher=matcher,
         vocab_tree=vocab_tree,

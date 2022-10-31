@@ -20,5 +20,6 @@ VOCAB_1M = Path('./vocab_bins/vocab_tree_flickr100K_words1M.bin')
 IMAGEREADER = 'ImageReader'
 SIFTEXTRACTION = 'SiftExtraction'
 SIFTMATCHING = 'SiftMatching'
+SEQUENTIALMATCHING = 'SequentialMatching'
 VOCABTREEMATCHING = 'VocabTreeMatching'
 MAPPER = 'Mapper'
