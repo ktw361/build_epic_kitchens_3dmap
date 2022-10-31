@@ -1,12 +1,12 @@
-source ~/.local/opt/anaconda3/etc/profile.d/conda.sh
-conda activate colmap
+# source ~/.local/opt/anaconda3/etc/profile.d/conda.sh
+# conda activate colmap
 
 export MULTIPLE_MODELS=1
 export USE_GPU=0
 
 DIR=$(realpath .)
 ROOT=$(realpath $1)
-DIR_VOCAB=$(realpath vocab)
+DIR_VOCAB=$(realpath vocab_bins)
 PROJECT_PATH=$ROOT
 
 cd $ROOT

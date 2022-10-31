@@ -10,7 +10,7 @@ import subprocess
 from lib.config_utils import read_ini, write_ini
 from lib.constants import (
     PROJ_ROOT,
-    IMAGEREADER, SIFTEXTRACTION, SIFTMATCHING,
+    IMAGEREADER, SIFTEXTRACTION, SIFTMATCHING, VOCABTREEMATCHING, MAPPER,
 )
 from lib.constants import VOCAB_32K, VOCAB_256K, VOCAB_1M
 
@@ -25,6 +25,10 @@ def parse_args():
     parser.add_argument(
         '--matcher', required=True,
         choices=['32K', '256K', '1M', 'SEQ', 'SEQ-32K', 'SEQ-256K', 'SEQ-1M'])
+    parser.add_argument(
+        '--no-extra-name', default=False, action='store_true')
+    parser.add_argument(
+        '--verbose', default=False, action='store_true')
     args = parser.parse_args()
     return args
 
@@ -120,7 +124,7 @@ class Runner:
             '--ImageReader.mask_path', f'{self.mask_path}',
         ]
         commands += self._pack_section_arguments([IMAGEREADER, SIFTEXTRACTION])
-        print(' '.join(commands))
+        print(' '.join(commands), file=self.log_fd)
 
         proc = subprocess.run(
             commands, 
@@ -128,6 +132,7 @@ class Runner:
             stderr=None if self.verbose else self.log_fd, 
             check=True, text=True)
         if self.verbose:
+            print(' '.join(commands))
             print(proc.stdout)
             print(proc.stderr)
     
@@ -140,12 +145,14 @@ class Runner:
             commands += ['--SequentialMatching.vocab_tree_path', 
                          f'{self.vocab_tree}']
         commands += self._pack_section_arguments([SIFTMATCHING])
-        print(' '.join(commands))
+        print(' '.join(commands), file=self.log_fd)
         proc = subprocess.run(
             commands, 
             stdout=None if self.verbose else self.log_fd, 
+            stderr=None if self.verbose else self.log_fd, 
             check=True, text=True)
         if self.verbose:
+            print(' '.join(commands))
             print(proc.stdout)
 
     def vocab_matching(self):
@@ -155,12 +162,15 @@ class Runner:
             '--VocabTreeMatching.vocab_tree_path', f'{self.vocab_tree}',
         ]
         commands += self._pack_section_arguments([SIFTMATCHING])
-        print(' '.join(commands))
+        commands += self._pack_section_arguments([VOCABTREEMATCHING])
+        print(' '.join(commands), file=self.log_fd)
         proc = subprocess.run(
             commands, 
             stdout=None if self.verbose else self.log_fd, 
+            stderr=None if self.verbose else self.log_fd, 
             check=True, text=True)
         if self.verbose:
+            print(' '.join(commands))
             print(proc.stdout)
             print(proc.stderr)
     
@@ -178,12 +188,15 @@ class Runner:
             '--image_path', f'{self.image_path}',
             '--output_path', f'{self.sparse_dir}',
         ]
-        print(' '.join(commands))
+        commands += self._pack_section_arguments([MAPPER])
+        print(' '.join(commands), file=self.log_fd)
         proc = subprocess.run(
             commands, 
             stdout=None if self.verbose else self.log_fd, 
+            stderr=None if self.verbose else self.log_fd, 
             check=True, text=True)
         if self.verbose:
+            print(' '.join(commands))
             print(proc.stdout)
             print(proc.stderr)
     
@@ -194,7 +207,8 @@ class Runner:
         ]
         proc = subprocess.run(
             commands, 
-            stdout=None, 
+            stdout=None if self.verbose else self.log_fd, 
+            stderr=None if self.verbose else self.log_fd, 
             check=True, text=True)
         print(proc.stdout)
         print(proc.stderr)
@@ -211,7 +225,11 @@ class Runner:
 
 def main():
     args = parse_args()
-    proj_name = '.'.join([args.proj_name, args.matcher])
+    print(args.no_extra_name)
+    if args.no_extra_name:
+        proj_name = args.proj_name
+    else:
+        proj_name = '.'.join([args.proj_name, args.matcher])
 
     matcher_raw = args.matcher
     if '32K' in matcher_raw:
@@ -232,7 +250,7 @@ def main():
         matcher=matcher,
         vocab_tree=vocab_tree,
         init=True,
-        verbose=False)
+        verbose=args.verbose)
     runner.compute_sparse()
 
 
