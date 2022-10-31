@@ -1,6 +1,7 @@
 **/__pycache__/
 
 visor_data/*
+!visor_data/frames_to_timestamps.json
 vocab_bins/
 
 projects

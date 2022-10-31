@@ -71,6 +71,14 @@ unique_objects =
 
 Colmap projects (intermediate outputs) will be stored in `./projects`.
 
+
+# Interprete IMU data
+
+- In https://github.com/epic-kitchens/VISOR-FrameExtraction:
+https://raw.githubusercontent.com/epic-kitchens/VISOR-FrameExtraction/main/frames_to_timestamps.json
+
+- unit: ACCL in m/s^2, GYRO in rad/s
+
 # EPIC-KITCHENS-100 Settings
 
 - GoPro model:      Hero 7

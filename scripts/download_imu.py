@@ -1,4 +1,5 @@
 import os
+import os.path as osp
 import subprocess
 
 
@@ -26,6 +27,7 @@ def main(target_dir='./visor_data/imu'):
         for sensor in sensors:
             url = fmt % (pid, vid, sensor)
             dst = f'{vid}-{sensor}.csv'
+            dst = osp.join(target_dir, dst)
             if os.path.exists(dst):
                 print(f"Skip downloaded {dst}.")
                 continue
