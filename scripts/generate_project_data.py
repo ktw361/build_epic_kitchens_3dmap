@@ -1,7 +1,7 @@
 import os
 import os.path as osp
 from lib.utils import retrieve_kitchen_frames, revert_from_VFid
-from lib.constants import IMG_MED_ROOT, MASK_ROOT, PROJ_BASES
+from lib.constants import IMG_MED_ROOT, BIN_MASK_MED_ROOT, PROJ_BASES
 
 
 def prepare_visor_medium_kitchen(pid, suffix='visor_medium', is_epic100=False):
@@ -11,7 +11,7 @@ def prepare_visor_medium_kitchen(pid, suffix='visor_medium', is_epic100=False):
         `projects/bases/<pid>_visor_medium/masks`
     """
     src_img_root = IMG_MED_ROOT  # (854 x 480)
-    src_mask_root = MASK_ROOT  # (854 x 480)
+    src_mask_root = BIN_MASK_MED_ROOT  # (854 x 480)
     src_list, vf_ids = retrieve_kitchen_frames(
         pid, visor_img_root=src_img_root, is_epic100=is_epic100)
     root = osp.join(PROJ_BASES, f'{pid}_{suffix}')
@@ -45,7 +45,6 @@ def prepare_visor_medium_kitchen_simple_mask(pid,
         `projects/bases/<pid>_visor_medium_simple_mask/masks`
     """
     src_img_root = IMG_MED_ROOT  # (854 x 480)
-    # src_mask_root = MASK_ROOT  # (854 x 480)
     src_list, vf_ids = retrieve_kitchen_frames(
         pid, visor_img_root=src_img_root, is_epic100=is_epic100)
     root = osp.join(PROJ_BASES, f'{pid}_{suffix}')
@@ -71,7 +70,7 @@ def prepare_visor_medium_kitchen_simple_mask(pid,
 
 
 if __name__ == '__main__':
-    # prepare_visor_medium_kitchen('P09')
-    # prepare_visor_medium_kitchen_simple_mask('P09')
+    prepare_visor_medium_kitchen('P01')
+    # prepare_visor_medium_kitchen_simple_mask('P01')
     prepare_visor_medium_kitchen('P27', is_epic100=True)
-    prepare_visor_medium_kitchen_simple_mask('P27', is_epic100=True)
+    # prepare_visor_medium_kitchen_simple_mask('P27', is_epic100=True)

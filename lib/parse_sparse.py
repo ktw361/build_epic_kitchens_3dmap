@@ -24,19 +24,24 @@ class SparseProj:
         self.database_path = f'{proj_root}/database.db'
         self.prefix = prefix
 
-        as_list = lambda x: list(dict(x).values())
-        self.cameras_raw = as_list(colmap_utils.read_cameras_binary(f'{prefix}/cameras.bin'))
-        self.points_raw  = as_list(colmap_utils.read_points3d_binary(f'{prefix}/points3D.bin'))
-        self.images_registered = as_list(colmap_utils.read_images_binary(f'{prefix}/images.bin'))
+        def _safe_read(path, func):
+            if not os.path.exists(path):
+                return None
+            as_list = lambda x: list(dict(x).values())
+            return as_list(func(path))
+        self.cameras_raw = _safe_read(f'{prefix}/cameras.bin', colmap_utils.read_cameras_binary)
+        self.points_raw  = _safe_read(f'{prefix}/points3D.bin', colmap_utils.read_points3d_binary)
+        self.images_registered = _safe_read(f'{prefix}/images.bin', colmap_utils.read_images_binary)
 
         # Build point cloud
-        pts, clr = [], []
-        for v in self.points_raw:
-            xyz, rgb = v.xyz, v.rgb
-            pts.append(xyz)
-            clr.append(rgb)
-        self.pcd_pts = np.stack(pts, 0)
-        self.pcd_clr = np.stack(clr, 0)
+        if self.points_raw is not None:
+            pts, clr = [], []
+            for v in self.points_raw:
+                xyz, rgb = v.xyz, v.rgb
+                pts.append(xyz)
+                clr.append(rgb)
+            self.pcd_pts = np.stack(pts, 0)
+            self.pcd_clr = np.stack(clr, 0)
     
     @cached_property
     def summary(self):

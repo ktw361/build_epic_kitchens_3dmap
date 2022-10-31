@@ -11,6 +11,10 @@ from lib.constants import (
 from lib.utils import visor_to_colmap_mask
 
 
+"""
+tl;dr Resize image from 1920x1080 to 854x480
+"""
+
 def generate_image_medium_worker(vid):
     resize = (854, 480)
     src_root = os.path.join(IMG_ROOT, vid)
@@ -42,6 +46,10 @@ def generate_images_medium(mp=False):
             pool.map(generate_image_medium_worker, vids)
 
 
+"""
+tl;dr Convert colorful mask from 854x480 to binary one, with diff size.
+"""
+
 def binarize_worker(vid):
     src_root = os.path.join(MASK_ROOT, vid)
     dst_root = os.path.join(BIN_MASK_MED_ROOT, vid)
@@ -58,7 +66,6 @@ def binarize_visor_masks(mp=False):
     then save them on the disk, 
     so that later they can be hard/soft linked into project directory.
     """
-
     # resize = (1920, 1080)
     vids = os.listdir(MASK_ROOT)
     if mp is True:
@@ -67,6 +74,9 @@ def binarize_visor_masks(mp=False):
     else:
         for vid in tqdm.tqdm(vids):
             binarize_worker(vid)
+
+
+
 
 
 if __name__ == '__main__':
