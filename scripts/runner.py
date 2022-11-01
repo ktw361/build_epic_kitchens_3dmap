@@ -10,7 +10,7 @@ import subprocess
 from lib.config_utils import read_ini, write_ini
 from lib.constants import (
     PROJ_ROOT,
-    IMAGEREADER, SIFTEXTRACTION, 
+    IMAGEREADER, SIFTEXTRACTION,
     SIFTMATCHING, VOCABTREEMATCHING, SEQUENTIALMATCHING,
     MAPPER,
 )
@@ -36,7 +36,7 @@ def parse_args():
 
 
 class Runner:
-    
+
     def __init__(self,
                  images_path: str,
                  masks_path: str,
@@ -44,7 +44,7 @@ class Runner:
 
                  matcher: str,
                  vocab_tree: str,
-                 
+
                  init=False,
                  init_from='configs/custom.ini',
                  verbose=False):
@@ -72,15 +72,10 @@ class Runner:
             self.vocab_tree = None
         self.sparse_dir = proj_dir/'sparse'
         self.tri_ba_dir = proj_dir/'tri_ba'  # Point Triangulator and Bundle Adjust
-        
+
         self.log_fd = open(proj_dir/'run.log', 'w')
         self.summary_file = proj_dir/'run.sum'
         self.verbose = verbose
-
-        # Sanity check image and masks
-        _img = np.asarray(Image.open(glob.glob(os.path.join(self.image_path, '*.jpg'))[0]))
-        _mask = np.asarray(Image.open(glob.glob(os.path.join(self.mask_path, '*.png'))[0]))
-        print(f"Check image shape: {_img.shape}, mask shape: {_mask.shape}")
 
         # configs
         self.camera_model = 'SIMPLE_RADIAL'
@@ -88,7 +83,7 @@ class Runner:
         if init:
             self.setup_project(init_from=init_from)
         self.cfg = read_ini(self.proj_file)
-    
+
     def setup_project(self, init_from: str, use_colmap=False):
         if use_colmap:
             commands = [
@@ -101,14 +96,14 @@ class Runner:
             print(proc.stdout)
         else:
             shutil.copyfile(init_from, f'{self.proj_file}')
-        
+
         # setup config and write back
         self.cfg = read_ini(self.proj_file)
         self.cfg['root']['image_path'] = str(self.image_path)
         self.cfg['root']['database_path'] = str(self.database_path)
         self.cfg[IMAGEREADER]['camera_model'] = self.camera_model
         write_ini(self.cfg, self.proj_file)
-    
+
     def _pack_section_arguments(self, sections: List[str]):
         ret_args = []
         for sec in sections:
@@ -120,7 +115,7 @@ class Runner:
 
     def extract_feature(self):
         commands = [
-            'colmap', 'feature_extractor', 
+            'colmap', 'feature_extractor',
             '--database_path', f'{self.database_path}',
             '--image_path', f'{self.image_path}',
             '--ImageReader.mask_path', f'{self.mask_path}',
@@ -129,30 +124,30 @@ class Runner:
         print(' '.join(commands), file=self.log_fd)
 
         proc = subprocess.run(
-            commands, 
-            stdout=None if self.verbose else self.log_fd, 
-            stderr=None if self.verbose else self.log_fd, 
+            commands,
+            stdout=None if self.verbose else self.log_fd,
+            stderr=None if self.verbose else self.log_fd,
             check=True, text=True)
         if self.verbose:
             print(' '.join(commands))
             print(proc.stdout)
             print(proc.stderr)
-    
+
     def sequential_matching(self):
         commands = [
-            'colmap', 'sequential_matcher', 
+            'colmap', 'sequential_matcher',
             '--database_path', f'{self.database_path}',
         ]
         if self.vocab_tree is not None:
-            commands += ['--SequentialMatching.vocab_tree_path', 
+            commands += ['--SequentialMatching.vocab_tree_path',
                          f'{self.vocab_tree}']
         commands += self._pack_section_arguments([SIFTMATCHING])
         commands += self._pack_section_arguments([SEQUENTIALMATCHING])
         print(' '.join(commands), file=self.log_fd)
         proc = subprocess.run(
-            commands, 
-            stdout=None if self.verbose else self.log_fd, 
-            stderr=None if self.verbose else self.log_fd, 
+            commands,
+            stdout=None if self.verbose else self.log_fd,
+            stderr=None if self.verbose else self.log_fd,
             check=True, text=True)
         if self.verbose:
             print(' '.join(commands))
@@ -160,7 +155,7 @@ class Runner:
 
     def vocab_matching(self):
         commands = [
-            'colmap', 'vocab_tree_matcher', 
+            'colmap', 'vocab_tree_matcher',
             '--database_path', f'{self.database_path}',
             '--VocabTreeMatching.vocab_tree_path', f'{self.vocab_tree}',
         ]
@@ -168,15 +163,15 @@ class Runner:
         commands += self._pack_section_arguments([VOCABTREEMATCHING])
         print(' '.join(commands), file=self.log_fd)
         proc = subprocess.run(
-            commands, 
-            stdout=None if self.verbose else self.log_fd, 
-            stderr=None if self.verbose else self.log_fd, 
+            commands,
+            stdout=None if self.verbose else self.log_fd,
+            stderr=None if self.verbose else self.log_fd,
             check=True, text=True)
         if self.verbose:
             print(' '.join(commands))
             print(proc.stdout)
             print(proc.stderr)
-    
+
     def mapper_run(self, hierarchical=False):
         """
         This step is usually slow.
@@ -186,7 +181,7 @@ class Runner:
         os.makedirs(self.sparse_dir, exist_ok=True)
         mapper = 'mapper' if not hierarchical else 'hierarchical_mapper'
         commands = [
-            'colmap', mapper, 
+            'colmap', mapper,
             '--database_path', f'{self.database_path}',
             '--image_path', f'{self.image_path}',
             '--output_path', f'{self.sparse_dir}',
@@ -194,27 +189,28 @@ class Runner:
         commands += self._pack_section_arguments([MAPPER])
         print(' '.join(commands), file=self.log_fd)
         proc = subprocess.run(
-            commands, 
-            stdout=None if self.verbose else self.log_fd, 
-            stderr=None if self.verbose else self.log_fd, 
+            commands,
+            stdout=None if self.verbose else self.log_fd,
+            stderr=None if self.verbose else self.log_fd,
             check=True, text=True)
         if self.verbose:
             print(' '.join(commands))
             print(proc.stdout)
             print(proc.stderr)
-    
+
     def print_summary(self, model_id=0):
         commands = [
-            'colmap', 'model_analyzer', 
+            'colmap', 'model_analyzer',
             '--path', f'{self.sparse_dir}/{model_id}',
         ]
         proc = subprocess.run(
-            commands, 
-            stdout=None if self.verbose else self.log_fd, 
-            stderr=None if self.verbose else self.log_fd, 
+            commands,
+            stdout=None if self.verbose else self.log_fd,
+            stderr=None if self.verbose else self.log_fd,
             check=True, text=True)
-        print(proc.stdout)
-        print(proc.stderr)
+        if self.verbose:
+            print(proc.stdout)
+            print(proc.stderr)
 
     def compute_sparse(self):
         self.extract_feature()
