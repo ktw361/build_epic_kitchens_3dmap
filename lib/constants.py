@@ -1,8 +1,4 @@
 from pathlib import Path
-from tkinter import W
-
-PROJ_ROOT = Path('./projects')
-PROJ_BASES = PROJ_ROOT/'bases'
 
 DATA = Path('./visor_data')
 

@@ -1,15 +1,14 @@
-from argparse import ArgumentParser
+from pathlib import Path
 from typing import List
-import glob
+import hydra
+from hydra.utils import to_absolute_path
+from omegaconf import DictConfig, OmegaConf
 import os
-import numpy as np
-from PIL import Image
 import shutil
 import subprocess
 
 from lib.config_utils import read_ini, write_ini
 from lib.constants import (
-    PROJ_ROOT,
     IMAGEREADER, SIFTEXTRACTION,
     SIFTMATCHING, VOCABTREEMATCHING, SEQUENTIALMATCHING,
     MAPPER,
@@ -17,30 +16,10 @@ from lib.constants import (
 from lib.constants import VOCAB_32K, VOCAB_256K, VOCAB_1M
 
 
-def parse_args():
-    parser = ArgumentParser()
-    parser.add_argument(
-        '--proj-name', required=True, help='E.g. P01-SEQ')
-    parser.add_argument(
-        '--images', required=True, help='For vadim data, use <path-to-frames>')
-    parser.add_argument('--masks', required=True)
-    parser.add_argument(
-        '--matcher', required=True,
-        choices=['32K', '256K', '1M', 'SEQ', 'SEQ-32K', 'SEQ-256K', 'SEQ-1M'])
-    parser.add_argument(
-        '--no-extra-name', default=False, action='store_true')
-    parser.add_argument(
-        '--verbose', default=False, action='store_true')
-    args = parser.parse_args()
-    return args
-
-
 class Runner:
 
     def __init__(self,
-                 images_path: str,
-                 masks_path: str,
-                 proj_name: str,
+                 cfg: DictConfig,
 
                  matcher: str,
                  vocab_tree: str,
@@ -53,8 +32,10 @@ class Runner:
             matcher: one of {'vocab', 'seq'}
             vocab_tree: one of {'32K', '256K', '1M'}
         """
-        proj_dir = PROJ_ROOT/f'{proj_name}'
-        os.makedirs(proj_dir, exist_ok=True)
+        # Read cfg
+        images_path = to_absolute_path(cfg.images)
+        masks_path = to_absolute_path(cfg.masks)
+        proj_dir = Path(os.getcwd())
 
         self.proj_dir = proj_dir  # e.g. './colmap_projects/P01_103'
         self.proj_file = proj_dir/'project.ini'
@@ -62,6 +43,7 @@ class Runner:
         self.image_path = images_path
         self.mask_path = masks_path
         self.matcher = matcher
+        self.hierarchical_mapper = cfg.hierarchical_mapper
         if vocab_tree == '32K':
             self.vocab_tree = VOCAB_32K
         elif vocab_tree == '256K':
@@ -78,10 +60,10 @@ class Runner:
         self.verbose = verbose
 
         # configs
-        self.camera_model = 'SIMPLE_RADIAL'
+        self.camera_model = cfg.camera_model
 
         if init:
-            self.setup_project(init_from=init_from)
+            self.setup_project(init_from=to_absolute_path(init_from))
         self.cfg = read_ini(self.proj_file)
 
     def setup_project(self, init_from: str, use_colmap=False):
@@ -218,18 +200,15 @@ class Runner:
             self.vocab_matching()
         elif self.matcher == 'seq':
             self.sequential_matching()
-        self.mapper_run(hierarchical=False)
+        self.mapper_run(hierarchical=self.hierarchical_mapper)
         self.print_summary()
 
 
-def main():
-    args = parse_args()
-    if args.no_extra_name:
-        proj_name = args.proj_name
-    else:
-        proj_name = '.'.join([args.proj_name, args.matcher])
+@hydra.main(config_path='../configs', config_name='runner')
+def main(cfg: DictConfig) -> None:
+    print(OmegaConf.to_yaml(cfg))
 
-    matcher_raw = args.matcher
+    matcher_raw = cfg.matcher
     if '32K' in matcher_raw:
         vocab_tree = '32K'
     elif '256K' in matcher_raw:
@@ -242,13 +221,11 @@ def main():
         matcher = 'vocab'
 
     runner = Runner(
-        images_path=os.path.abspath(args.images),
-        masks_path=os.path.abspath(args.masks),
-        proj_name=proj_name,
+        cfg=cfg,
         matcher=matcher,
         vocab_tree=vocab_tree,
         init=True,
-        verbose=args.verbose)
+        verbose=cfg.verbose)
     runner.compute_sparse()
 
 

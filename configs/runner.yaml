@@ -1,0 +1,17 @@
+proj_name: ???
+
+verbose: False
+
+hydra:
+  run:
+    dir: ./projects/${now:%Y-%m-%d}/${proj_name}-${now:%H:%M}
+
+images: ???
+masks: ???
+
+matcher: ???  # '32K', '256K', '1M', 
+              # 'SEQ', 'SEQ-32K', 'SEQ-256K', 'SEQ-1M'
+
+hierarchical_mapper: False
+
+camera_model: 'SIMPLE_RADIAL'
