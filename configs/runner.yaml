@@ -4,7 +4,7 @@ verbose: False
 
 hydra:
   run:
-    dir: ./projects/${now:%Y-%m-%d}/${proj_name}-${now:%H:%M}
+    dir: ./projects/${now:%Y-%m-%d}/${proj_name}
 
 images: ???
 masks: ???
