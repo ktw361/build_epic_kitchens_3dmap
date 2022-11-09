@@ -16,6 +16,15 @@ from lib.constants import (
 from lib.constants import VOCAB_32K, VOCAB_256K, VOCAB_1M
 
 
+""" Usage:
+python scripts/runner.py  \
+    images=projects/bases/P01_visor_medium/images \
+    masks=projects/bases/P01_visor_medium/masks \
+    matcher=32K \
+    proj_name=P01-simple-mask
+"""
+
+
 class Runner:
 
     def __init__(self,

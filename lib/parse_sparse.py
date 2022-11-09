@@ -1,12 +1,15 @@
 from typing import NamedTuple
 from functools import cached_property
 from argparse import ArgumentParser
+from PIL import Image
 import os
 import numpy as np
 import sqlite3
 import pandas as pd
 from colmap_converter import colmap_utils
+import cv2
 from libzhifan.geometry import create_pcd_scene
+from libzhifan import epylab
 
 
 class ColmapDB(NamedTuple):
@@ -134,6 +137,30 @@ class SparseProj:
             matches=matches,
             two_view_geometries=two_view_geometries
             ))
+
+    def show_keypoints(self, img_dir, mask_dir, start_idx, num_imgs):
+        img_metas = sorted(self.images_registered, key = lambda x: x.name)
+
+        def single_show_keypoint(idx) -> np.ndarray:
+            img_meta = img_metas[idx]
+            img_name = img_meta.name
+            mask_name = img_name.replace('.jpg', '.png')
+            img = np.asarray(Image.open(f'{img_dir}/{img_name}'))
+            if mask_dir is not None and os.path.exists(mask_dir):
+                mask = np.asarray(Image.open(f'{mask_dir}/{mask_name}'))
+                img[mask[..., :3] == 0] = 0
+            for x, y in img_meta.xys:
+                img = cv2.circle(
+                    img, (int(x), int(y)), radius=1, color=(255, 0, 0), thickness=4)
+            return img
+
+        for idx in range(start_idx, start_idx + num_imgs):
+            epylab.figure()
+            img_meta = img_metas[idx]
+            epylab.title(img_meta.name)
+            epylab.axis('off')
+            img = single_show_keypoint(idx)
+            epylab.imshow(img)
 
     @property
     def pcd(self):
