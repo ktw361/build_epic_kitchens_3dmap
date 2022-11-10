@@ -31,8 +31,8 @@ def prepare_visor_medium_kitchen(pid, suffix='visor_medium', is_epic100=False):
         assert osp.exists(src_mask)
         dst_img = osp.join(images, name + '.jpg')
         dst_mask = osp.join(masks, name + '.jpg.png')
-        os.symlink(src_img, dst_img)
-        os.symlink(src_mask, dst_mask)
+        os.link(src_img, dst_img)
+        os.link(src_mask, dst_mask)
         # print(src_img, dst_img)
         # print(src_mask, dst_mask)
 

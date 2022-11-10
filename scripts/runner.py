@@ -50,8 +50,9 @@ class Runner:
         # Process images path
         src_images_path = to_absolute_path(cfg.images)
         self.image_path = proj_dir/'images'
-        if osp.exists(self.image_path):
-            os.unlink(self.image_path)
+        # Don't handle the existence error so we know something already there
+        # if osp.exists(self.image_path):
+        #     os.unlink(self.image_path)
         os.symlink(src_images_path, self.image_path, target_is_directory=True)
 
         # Deal with NOMASK, SimpleMask or Visor Mask
@@ -70,8 +71,8 @@ class Runner:
         else:
             src_masks_path = to_absolute_path(cfg.masks)
             self.mask_path = proj_dir/'masks'
-            if osp.exists(self.mask_path):
-                os.unlink(self.mask_path)
+            # if osp.exists(self.mask_path):
+            #     os.unlink(self.mask_path)
             os.symlink(src_masks_path, self.mask_path, target_is_directory=True)
 
         self.proj_file = proj_dir/'project.ini'
@@ -147,7 +148,7 @@ class Runner:
             commands += ['--ImageReader.mask_path', f'{self.mask_path}']
 
         commands += self._pack_section_arguments([IMAGEREADER, SIFTEXTRACTION])
-        # print(' '.join(commands), file=self.log_fd)
+        print(' '.join(commands), file=self.colmap_log_fd)
 
         proc = subprocess.run(
             commands,
