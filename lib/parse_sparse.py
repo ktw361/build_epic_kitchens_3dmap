@@ -1,7 +1,10 @@
+from pathlib import Path
 from typing import NamedTuple
 from functools import cached_property
 from argparse import ArgumentParser
+import glob
 from PIL import Image
+from omegaconf import OmegaConf
 import os
 import numpy as np
 import sqlite3
@@ -23,6 +26,7 @@ class ColmapDB(NamedTuple):
 class SparseProj:
     
     def __init__(self, proj_root, model_id=0):
+        proj_root = Path(proj_root)
         prefix = f'{proj_root}/sparse/{model_id}'
         self.database_path = f'{proj_root}/database.db'
         self.prefix = prefix
@@ -35,6 +39,18 @@ class SparseProj:
         self.cameras_raw = _safe_read(f'{prefix}/cameras.bin', colmap_utils.read_cameras_binary)
         self.points_raw  = _safe_read(f'{prefix}/points3D.bin', colmap_utils.read_points3d_binary)
         self.images_registered = _safe_read(f'{prefix}/images.bin', colmap_utils.read_images_binary)
+
+        cfg = OmegaConf.load(proj_root/'.hydra/config.yaml')
+        self.image_path = proj_root/'images'
+        self.is_nomask = False
+        self.is_simplemask = False
+        if cfg.is_nomask:
+            self.is_nomask = True
+        elif cfg.is_simplemask:
+            self.is_simplemask = True
+            self.camera_mask_path = glob.glob(str(proj_root/'*.png'))[0]
+        else:
+            self.mask_path = proj_root/'masks'
 
         # Build point cloud
         if self.points_raw is not None:
@@ -138,16 +154,21 @@ class SparseProj:
             two_view_geometries=two_view_geometries
             ))
 
-    def show_keypoints(self, img_dir, mask_dir, start_idx, num_imgs):
+    def show_keypoints(self, start_idx, num_imgs):
         img_metas = sorted(self.images_registered, key = lambda x: x.name)
 
         def single_show_keypoint(idx) -> np.ndarray:
             img_meta = img_metas[idx]
             img_name = img_meta.name
-            mask_name = img_name.replace('.jpg', '.png')
-            img = np.asarray(Image.open(f'{img_dir}/{img_name}'))
-            if mask_dir is not None and os.path.exists(mask_dir):
-                mask = np.asarray(Image.open(f'{mask_dir}/{mask_name}'))
+            mask_name = img_name + '.png'
+            img = np.asarray(Image.open(f'{self.image_path}/{img_name}'))
+            if self.is_nomask:
+                pass
+            elif self.is_simplemask:
+                mask = np.asarray(Image.open(f'{self.camera_mask_path}'))
+                img[mask[..., :3] == 0] = 0
+            else:
+                mask = np.asarray(Image.open(f'{self.mask_path}/{mask_name}'))
                 img[mask[..., :3] == 0] = 0
             for x, y in img_meta.xys:
                 img = cv2.circle(
@@ -161,6 +182,7 @@ class SparseProj:
             epylab.axis('off')
             img = single_show_keypoint(idx)
             epylab.imshow(img)
+        epylab.close()
 
     @property
     def pcd(self):

@@ -1,9 +1,12 @@
-from pathlib import Path
 from typing import List
 import hydra
+import logging
 from hydra.utils import to_absolute_path
 from omegaconf import DictConfig, OmegaConf
 import os
+import os.path as osp
+from pathlib import Path
+from PIL import Image
 import shutil
 import subprocess
 
@@ -41,16 +44,38 @@ class Runner:
             matcher: one of {'vocab', 'seq'}
             vocab_tree: one of {'32K', '256K', '1M'}
         """
-        # Read cfg
-        images_path = to_absolute_path(cfg.images)
-        masks_path = to_absolute_path(cfg.masks)
         proj_dir = Path(os.getcwd())
-
         self.proj_dir = proj_dir  # e.g. './colmap_projects/P01_103'
+
+        # Process images path
+        src_images_path = to_absolute_path(cfg.images)
+        self.image_path = proj_dir/'images'
+        if osp.exists(self.image_path):
+            os.unlink(self.image_path)
+        os.symlink(src_images_path, self.image_path, target_is_directory=True)
+
+        # Deal with NOMASK, SimpleMask or Visor Mask
+        self.is_nomask = False
+        self.is_simplemask = False
+        if cfg.is_nomask:
+            self.is_nomask = True 
+        elif cfg.is_simplemask:
+            # Auto determine mask size
+            self.is_simplemask = True
+            probe_img = osp.join(self.image_path, os.listdir(self.image_path)[0])
+            probe_img = Image.open(probe_img)
+            camera_mask_path = f'simple_mask_{probe_img.width}x{probe_img.height}.png'
+            self.camera_mask_path = to_absolute_path(f'./extra/{camera_mask_path}')
+            shutil.copyfile(self.camera_mask_path, proj_dir/(osp.basename(self.camera_mask_path)))
+        else:
+            src_masks_path = to_absolute_path(cfg.masks)
+            self.mask_path = proj_dir/'masks'
+            if osp.exists(self.mask_path):
+                os.unlink(self.mask_path)
+            os.symlink(src_masks_path, self.mask_path, target_is_directory=True)
+
         self.proj_file = proj_dir/'project.ini'
         self.database_path = proj_dir/'database.db'
-        self.image_path = images_path
-        self.mask_path = masks_path
         self.matcher = matcher
         self.hierarchical_mapper = cfg.hierarchical_mapper
         if vocab_tree == '32K':
@@ -64,8 +89,12 @@ class Runner:
         self.sparse_dir = proj_dir/'sparse'
         self.tri_ba_dir = proj_dir/'tri_ba'  # Point Triangulator and Bundle Adjust
 
-        self.log_fd = open(proj_dir/'run.log', 'w')
-        self.summary_file = proj_dir/'run.sum'
+        # Logger related
+        self.colmap_log_fd = open(proj_dir/'colmap_output.log', 'w')
+        logging.basicConfig(filename=proj_dir/'runner.log',
+                            filemode='w',
+                            level=logging.DEBUG)
+        self.logger = logging.getLogger(__name__)
         self.verbose = verbose
 
         # configs
@@ -109,15 +138,21 @@ class Runner:
             'colmap', 'feature_extractor',
             '--database_path', f'{self.database_path}',
             '--image_path', f'{self.image_path}',
-            '--ImageReader.mask_path', f'{self.mask_path}',
         ]
+        if self.is_nomask:
+            pass  # Nothing
+        elif self.is_simplemask:
+            commands += ['--ImageReader.camera_mask_path', f'{self.camera_mask_path}']
+        else:
+            commands += ['--ImageReader.mask_path', f'{self.mask_path}']
+
         commands += self._pack_section_arguments([IMAGEREADER, SIFTEXTRACTION])
-        print(' '.join(commands), file=self.log_fd)
+        # print(' '.join(commands), file=self.log_fd)
 
         proc = subprocess.run(
             commands,
-            stdout=None if self.verbose else self.log_fd,
-            stderr=None if self.verbose else self.log_fd,
+            stdout=None if self.verbose else self.colmap_log_fd,
+            stderr=None if self.verbose else self.colmap_log_fd,
             check=True, text=True)
         if self.verbose:
             print(' '.join(commands))
@@ -134,11 +169,11 @@ class Runner:
                          f'{self.vocab_tree}']
         commands += self._pack_section_arguments([SIFTMATCHING])
         commands += self._pack_section_arguments([SEQUENTIALMATCHING])
-        print(' '.join(commands), file=self.log_fd)
+        print(' '.join(commands), file=self.colmap_log_fd)
         proc = subprocess.run(
             commands,
-            stdout=None if self.verbose else self.log_fd,
-            stderr=None if self.verbose else self.log_fd,
+            stdout=None if self.verbose else self.colmap_log_fd,
+            stderr=None if self.verbose else self.colmap_log_fd,
             check=True, text=True)
         if self.verbose:
             print(' '.join(commands))
@@ -152,11 +187,11 @@ class Runner:
         ]
         commands += self._pack_section_arguments([SIFTMATCHING])
         commands += self._pack_section_arguments([VOCABTREEMATCHING])
-        print(' '.join(commands), file=self.log_fd)
+        print(' '.join(commands), file=self.colmap_log_fd)
         proc = subprocess.run(
             commands,
-            stdout=None if self.verbose else self.log_fd,
-            stderr=None if self.verbose else self.log_fd,
+            stdout=None if self.verbose else self.colmap_log_fd,
+            stderr=None if self.verbose else self.colmap_log_fd,
             check=True, text=True)
         if self.verbose:
             print(' '.join(commands))
@@ -178,11 +213,11 @@ class Runner:
             '--output_path', f'{self.sparse_dir}',
         ]
         commands += self._pack_section_arguments([MAPPER])
-        print(' '.join(commands), file=self.log_fd)
+        print(' '.join(commands), file=self.colmap_log_fd)
         proc = subprocess.run(
             commands,
-            stdout=None if self.verbose else self.log_fd,
-            stderr=None if self.verbose else self.log_fd,
+            stdout=None if self.verbose else self.colmap_log_fd,
+            stderr=None if self.verbose else self.colmap_log_fd,
             check=True, text=True)
         if self.verbose:
             print(' '.join(commands))
@@ -196,14 +231,15 @@ class Runner:
         ]
         proc = subprocess.run(
             commands,
-            stdout=None if self.verbose else self.log_fd,
-            stderr=None if self.verbose else self.log_fd,
+            stdout=None if self.verbose else self.colmap_log_fd,
+            stderr=None if self.verbose else self.colmap_log_fd,
             check=True, text=True)
         if self.verbose:
             print(proc.stdout)
             print(proc.stderr)
 
     def compute_sparse(self):
+        self.logger.info("compute_sparse() Started")
         self.extract_feature()
         if self.matcher == 'vocab':
             self.vocab_matching()
@@ -211,6 +247,7 @@ class Runner:
             self.sequential_matching()
         self.mapper_run(hierarchical=self.hierarchical_mapper)
         self.print_summary()
+        self.logger.info("compute_sparse() Finished")
 
 
 @hydra.main(config_path='../configs', config_name='runner')

@@ -7,6 +7,8 @@ hydra:
     dir: ./projects/${now:%Y-%m-%d}/${proj_name}
 
 images: ???
+is_nomask: False
+is_simplemask: False
 masks: ???
 
 matcher: ???  # '32K', '256K', '1M', 
