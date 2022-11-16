@@ -76,9 +76,6 @@ def binarize_visor_masks(mp=False):
             binarize_worker(vid)
 
 
-
-
-
 if __name__ == '__main__':
     # generate_images_medium(mp=True)
     binarize_visor_masks(mp=True)

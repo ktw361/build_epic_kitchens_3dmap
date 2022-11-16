@@ -154,7 +154,7 @@ class SparseProj:
             two_view_geometries=two_view_geometries
             ))
 
-    def show_keypoints(self, start_idx, num_imgs):
+    def show_keypoints(self, start_idx, num_imgs, show_origin=False):
         img_metas = sorted(self.images_registered, key = lambda x: x.name)
 
         def single_show_keypoint(idx) -> np.ndarray:
@@ -162,14 +162,15 @@ class SparseProj:
             img_name = img_meta.name
             mask_name = img_name + '.png'
             img = np.asarray(Image.open(f'{self.image_path}/{img_name}'))
-            if self.is_nomask:
-                pass
-            elif self.is_simplemask:
-                mask = np.asarray(Image.open(f'{self.camera_mask_path}'))
-                img[mask[..., :3] == 0] = 0
-            else:
-                mask = np.asarray(Image.open(f'{self.mask_path}/{mask_name}'))
-                img[mask[..., :3] == 0] = 0
+            if not show_origin:
+                if self.is_nomask:
+                    pass
+                elif self.is_simplemask:
+                    mask = np.asarray(Image.open(f'{self.camera_mask_path}'))
+                    img[mask[..., :3] == 0] = 0
+                else:
+                    mask = np.asarray(Image.open(f'{self.mask_path}/{mask_name}'))
+                    img[mask[..., :3] == 0] = 0
             for x, y in img_meta.xys:
                 img = cv2.circle(
                     img, (int(x), int(y)), radius=1, color=(255, 0, 0), thickness=4)
