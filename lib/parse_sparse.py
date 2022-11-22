@@ -25,20 +25,25 @@ class ColmapDB(NamedTuple):
 
 class SparseProj:
     
-    def __init__(self, proj_root, model_id=0):
+    def __init__(self, proj_root, model_id=0, prefix=None):
         proj_root = Path(proj_root)
-        prefix = f'{proj_root}/sparse/{model_id}'
+        if prefix is None:
+            prefix = f'sparse/{model_id}'
+        prefix = f'{proj_root}/{prefix}'
+            
         self.database_path = f'{proj_root}/database.db'
         self.prefix = prefix
 
         def _safe_read(path, func):
             if not os.path.exists(path):
+                print(f'{path} not exists.')
                 return None
             as_list = lambda x: list(dict(x).values())
             return as_list(func(path))
         self.cameras_raw = _safe_read(f'{prefix}/cameras.bin', colmap_utils.read_cameras_binary)
         self.points_raw  = _safe_read(f'{prefix}/points3D.bin', colmap_utils.read_points3d_binary)
-        self.images_registered = _safe_read(f'{prefix}/images.bin', colmap_utils.read_images_binary)
+        images_registered = _safe_read(f'{prefix}/images.bin', colmap_utils.read_images_binary)
+        self.images_registered = sorted(images_registered, key = lambda x: x.name)
 
         cfg = OmegaConf.load(proj_root/'.hydra/config.yaml')
         self.image_path = proj_root/'images'
@@ -155,7 +160,7 @@ class SparseProj:
             ))
 
     def show_keypoints(self, start_idx, num_imgs, show_origin=False):
-        img_metas = sorted(self.images_registered, key = lambda x: x.name)
+        img_metas = self.images_registered
 
         def single_show_keypoint(idx) -> np.ndarray:
             img_meta = img_metas[idx]

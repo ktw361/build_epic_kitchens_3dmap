@@ -50,10 +50,8 @@ class Runner:
         # Process images path
         src_images_path = to_absolute_path(cfg.images)
         self.image_path = proj_dir/'images'
-        # Don't handle the existence error so we know something already there
-        # if osp.exists(self.image_path):
-        #     os.unlink(self.image_path)
-        os.symlink(src_images_path, self.image_path, target_is_directory=True)
+        if cfg.link_image_dir:
+            os.symlink(src_images_path, self.image_path, target_is_directory=True)
 
         # Deal with NOMASK, SimpleMask or Visor Mask
         self.is_nomask = False
