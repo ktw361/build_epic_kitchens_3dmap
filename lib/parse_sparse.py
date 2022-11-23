@@ -159,6 +159,29 @@ class SparseProj:
             two_view_geometries=two_view_geometries
             ))
 
+    def _show_img_kps(self, img_name, xys, show_origin, mask_name: str = None):
+        """
+        Args:
+            img_path: img path
+            xys: [N, 2] keypoints
+            show_origin: if False, black-out mask region, 
+                this requires mask_name to be valid
+        """
+        img = np.asarray(Image.open(f'{self.image_path}/{img_name}'))
+        if not show_origin:
+            if self.is_nomask:
+                pass
+            elif self.is_simplemask:
+                mask = np.asarray(Image.open(f'{self.camera_mask_path}'))
+                img[mask[..., :3] == 0] = 0
+            else:
+                mask = np.asarray(Image.open(f'{self.mask_path}/{mask_name}'))
+                img[mask[..., :3] == 0] = 0
+        for x, y in xys:
+            img = cv2.circle(
+                img, (int(x), int(y)), radius=1, color=(255, 0, 0), thickness=4)
+        return img
+
     def show_keypoints(self, start_idx, num_imgs, show_origin=False):
         img_metas = self.images_registered
 
@@ -166,22 +189,10 @@ class SparseProj:
             img_meta = img_metas[idx]
             img_name = img_meta.name
             mask_name = img_name + '.png'
-            img = np.asarray(Image.open(f'{self.image_path}/{img_name}'))
-            if not show_origin:
-                if self.is_nomask:
-                    pass
-                elif self.is_simplemask:
-                    mask = np.asarray(Image.open(f'{self.camera_mask_path}'))
-                    img[mask[..., :3] == 0] = 0
-                else:
-                    mask = np.asarray(Image.open(f'{self.mask_path}/{mask_name}'))
-                    img[mask[..., :3] == 0] = 0
-            for x, y in img_meta.xys:
-                img = cv2.circle(
-                    img, (int(x), int(y)), radius=1, color=(255, 0, 0), thickness=4)
-            return img
+            return self._show_img_kps(img_name=img_name, xys=img_meta.xys, 
+                                      show_origin=show_origin, mask_name=mask_name)
 
-        for idx in range(start_idx, start_idx + num_imgs):
+        for idx in range(start_idx, start_idx + num_imgs + 1):
             epylab.figure()
             img_meta = img_metas[idx]
             epylab.title(img_meta.name)
@@ -190,6 +201,33 @@ class SparseProj:
             epylab.imshow(img)
         epylab.close()
 
+    def image_id2name(self, i: int) -> str:
+        df = self.database.images
+        return df[df.image_id == i].name.iloc[0]
+    
+    def image_name2id(self, name: str) -> int:
+        df = self.database.images
+        return df[df.name == name].image_id.iloc[0]
+    
+    def show_database_keypoints(self, 
+                                image_id: int = None, 
+                                image_name: str = None,
+                                num_cols=6) -> np.ndarray:
+        """
+        6D affine keypoints: (x, y, a_11, a_12, a_21, a_22)
+        """
+        assert num_cols == 6
+        df = self.database.keypoints
+        if image_id is None and image_name is not None:
+            image_id = self.image_name2id(image_name)
+        if image_name is None:
+            image_name = self.image_id2name(image_id)
+        entry = df[df.image_id == image_id].iloc[0]
+        array = np.frombuffer(entry.data, dtype=np.float32).reshape(-1, num_cols)
+        xys = array[:, :2]
+        return self._show_img_kps(img_name=image_name, xys=xys,
+                                  show_origin=True, mask_name=None)
+        
     @property
     def pcd(self):
         return create_pcd_scene(
