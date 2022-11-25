@@ -224,7 +224,6 @@ class SparseProj:
         xys = array[:, :2]
         return self._show_img_kps(img_path=img_path, xys=xys,
                                   show_origin=True, mask_name=None)
-        
 
     def image_id2name(self, i: int) -> str:
         df = self.database.images
