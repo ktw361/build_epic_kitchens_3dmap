@@ -2,11 +2,7 @@
 
 # Config files
 
-`app_default.ini` contains argument that are read directly from `--help`.
-
 `custom.ini` contains customized arguments tuned based on `app_default`.
-
-`generated_default.ini` contains arguments generated from `colmap generate_project`.
 
 # Data structure
 
@@ -63,14 +59,9 @@ Resolutions from different sources
 unique_objects = 
     ['tap', 'fridge', 'hob', 'bin', 'oven', 'sink', 'dishwasher', 'freezer', 'machine washing', 'extractor fan']
 
-# Reproducing results from Vadim
-
-- How to sample linearly? Ans: interval = int(max_frame_count / 1000), except P01_01.
-
 # Colmap outputs
 
 Colmap projects (intermediate outputs) will be stored in `./projects`.
-
 
 # Interprete IMU data
 
@@ -79,13 +70,15 @@ https://raw.githubusercontent.com/epic-kitchens/VISOR-FrameExtraction/main/frame
 
 - unit: ACCL in m/s^2, GYRO in rad/s
 
-# EPIC-KITCHENS-100 Settings
+# GoPro Settings
+
+## EPIC-KITCHENS-100 Settings
 
 - GoPro model:      Hero 7
 - Aspect Ratio:     16x9
 - Resolution:       1080
 - Frames Per Second:    50
-- Field Of View:        Linear
+- Field of View:        Linear
 - Video Stabilization:  ON
 - GPS:                  OFF
 
@@ -97,7 +90,25 @@ From GoPro wesite:
     - Horizontal FOV = 87.6º  
     - Diagonal FOV = 95.5º
 
+## EPIC-KITCHENS-55
+
+- GoPro model:          Hero 5
+- Frames Per Second:    59.94
+- Field of View:        Linear
+- Resolution:           1080p
+
+Special cases:
+
+* 1280x720: `P12_01`, `P12_02`, `P12_03`, `P12_04`.
+* 2560x1440: `P12_05`, `P12_06` 
+* 29.97 FPS: `P09_07`, `P09_08`, `P10_01`, `P10_04`, `P11_01`, `P18_02`,
+    `P18_03`
+* 48 FPS: `P17_01`, `P17_02`, `P17_03`, `P17_04`
+* 90 FPS: `P18_09`
+
 ## Resources: 
-- https://data.bris.ac.uk/datasets/2g1n6qdydwa9u22shpxqzp0t8m/AcquisitionGuidelines/GoProSettings_1.jpg
-- https://data.bris.ac.uk/datasets/2g1n6qdydwa9u22shpxqzp0t8m/readme.txt
+
+- [EPIC-100 GoPro Setting](https://data.bris.ac.uk/datasets/2g1n6qdydwa9u22shpxqzp0t8m/AcquisitionGuidelines/GoProSettings_1.jpg)
+- [EPIC-100 README](https://data.bris.ac.uk/datasets/2g1n6qdydwa9u22shpxqzp0t8m/readme.txt)
 - https://gopro.com/help/articles/question_answer/hero7-field-of-view-fov-information?sf96748270=1
+- [EPIC-55 README](https://data.bris.ac.uk/datasets/3h91syskeag572hl6tvuovwv4d/readme.txt)
