@@ -1,8 +1,9 @@
 from typing import Union, Tuple
-from functools import reduce
+import itertools
 import re
 import glob
 import numpy as np
+import subprocess
 from PIL import Image
 from lib.constants import IMG_ROOT
 
@@ -62,9 +63,7 @@ def retrieve_kitchen_frames(pid: str,
     parent_list = [
         v for v in parent_list 
         if len(v.split('/')[-1]) == vid_len]
-    src_list = reduce(
-        lambda a,b: a + b,
-        map(lambda x: glob.glob(x+'/*.jpg'), parent_list), [])
+    src_list = itertools.chain.from_iterable(map(lambda x: glob.glob(x+'/*.jpg'), parent_list))
         
     vf_ids = list(map(convert_to_VFid, src_list))
     src_list = [x for _, x in sorted(zip(vf_ids, src_list))]
@@ -93,3 +92,14 @@ def visor_to_colmap_mask(in_path: str,
             out_img = out_img.resize(resize)
         out_img.save(out_path)
     return out
+
+    
+""" FFMPEG related """
+
+def get_video_duration(filename):
+    result = subprocess.run(["ffprobe", "-v", "error", "-show_entries",
+                             "format=duration", "-of",
+                             "default=noprint_wrappers=1:nokey=1", filename],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT)
+    return float(result.stdout)

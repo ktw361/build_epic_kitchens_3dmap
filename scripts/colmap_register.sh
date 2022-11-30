@@ -12,6 +12,7 @@ mkdir $NEW_OUTPUT -p
 colmap feature_extractor \
     --database_path $PROJECT_PATH/database.db \
     --image_path $NEW_FRAMES \
+    --ImageReader.existing_camera_id 1 \
     --ImageReader.single_camera 1 \
     --SiftExtraction.use_gpu $USE_GPU \
     # --ImageReader.mask_path $PROJECT_PATH/masks \
