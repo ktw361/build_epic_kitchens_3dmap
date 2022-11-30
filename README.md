@@ -39,10 +39,10 @@ project
 ## Image resolutions
 
 Classify into 4 categories:
-- vadim: 480 x 270
-- small: 456 x 256
-- medium: 854 x 480
-- large: 1920 x 1080
+- vadim: 480 x 270 (0.5625)
+- small: 456 x 256 (0.5614)
+- medium: 854 x 480 (0.5620)
+- large: 1920 x 1080 (0.5625)
 
 Resolutions from different sources
 - VISOR image: 1920 x 1080
@@ -93,9 +93,10 @@ From GoPro wesite:
 ## EPIC-KITCHENS-55
 
 - GoPro model:          Hero 5
+- Aspect Ratio:         16x9
+- Resolution:           1080p
 - Frames Per Second:    59.94
 - Field of View:        Linear
-- Resolution:           1080p
 
 Special cases:
 
@@ -110,5 +111,5 @@ Special cases:
 
 - [EPIC-100 GoPro Setting](https://data.bris.ac.uk/datasets/2g1n6qdydwa9u22shpxqzp0t8m/AcquisitionGuidelines/GoProSettings_1.jpg)
 - [EPIC-100 README](https://data.bris.ac.uk/datasets/2g1n6qdydwa9u22shpxqzp0t8m/readme.txt)
-- https://gopro.com/help/articles/question_answer/hero7-field-of-view-fov-information?sf96748270=1
+- [Hero7 FOV Info](https://gopro.com/help/articles/question_answer/hero7-field-of-view-fov-information?sf96748270=1)
 - [EPIC-55 README](https://data.bris.ac.uk/datasets/3h91syskeag572hl6tvuovwv4d/readme.txt)
