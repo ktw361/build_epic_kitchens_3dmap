@@ -15,6 +15,16 @@ masks: ???
 matcher: ???  # '32K', '256K', '1M', 
               # 'SEQ', 'SEQ-32K', 'SEQ-256K', 'SEQ-1M'
 
+# For sequential matching, 
+#   `overlap` is important, default 10
+#   can also perform vocab tree matching, 
+#   `loop_detection_period`, every 10 frames
+
+# For vocab matching, 
+#   `num_images` default 100
+#   VocabTreeMatching.match_list_path can set matching images
+
+
 hierarchical_mapper: False
 
 camera_model: 'SIMPLE_RADIAL'

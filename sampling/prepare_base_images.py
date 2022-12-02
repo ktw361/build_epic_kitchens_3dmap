@@ -14,8 +14,6 @@ Procedures:
         ii. determine num_samples = num_frames / SAMPLE_FREQ.
         iii. apart from above fixed samples, add Visor frames.
 
-        [ ] Use ffmpeg?
-
 Options
     1. Sample at a fixed frequency => bias towards longer videos
     2. Sample each video sample number of frames => belief that video contains equal amount of environment info 
@@ -29,16 +27,18 @@ TODO:
 from argparse import ArgumentParser
 import os
 from pathlib import Path
+import tqdm
+import subprocess
 from lib.utils import get_video_duration
 
 visor_sparse_root = Path('/media/skynet/DATA/Zhifan/visor-sparse')
 videos_dir = visor_sparse_root/'videos'
 images_dir = visor_sparse_root/'images'
 
-SAMPLE_FREQ = 100
+image_save_dir = Path('./projects/bases')
 
 
-def prepare_images(pid: str, epic_set: str):
+def prepare_images(pid: str, epic_set: str, SAMPLE_FREQ=100, resolution='854:480'):
     """
     Args:
         pid: e.g. P01
@@ -66,16 +66,45 @@ def prepare_images(pid: str, epic_set: str):
         total_frames += num_frames
         total_samples += num_samples
         print(f'{vid} num_frames = {num_frames}\t(duration {int(dur)}s)\tnum_samples = {num_samples}')
+
+        os.makedirs(image_save_dir/vid, exist_ok=True)
+        pbar = tqdm.tqdm(total=num_samples)
+        for sample_ind in range(1, num_samples+1):
+            frame_ind = sample_ind * SAMPLE_FREQ
+            time = frame_ind / FPS
+            save_path = str(image_save_dir/vid/f'frame_{frame_ind:010d}.jpg')
+            if os.path.exists(save_path):
+                continue
+            command = [
+                'ffmpeg', 
+                '-loglevel', 'error',
+                '-threads', str(16),
+                '-ss', str(time),
+                '-i', str(video_file),
+                '-qscale:v', '4', '-qscale', '2',
+                '-vf', f'scale={resolution}',
+                '-frames:v', '1',
+                f'{save_path}'
+            ]
+            # print(' '.join(command))
+            proc = subprocess.run(
+                command,
+                stdout=None,
+                stderr=None,
+                check=True, text=True)
+            pbar.update(1)
+        pbar.close()
+
+        # TODO: add visor frames
+
     print(f'Total num_frames = {total_frames}, num_samples = {total_samples}')
-
-    # TODO: get images
-
-    # TODO: add visor frames
 
 
 if __name__ == '__main__':
     parser = ArgumentParser()
     parser.add_argument('pid')
     parser.add_argument('epic_set', choices=['100', '55'])
+    parser.add_argument('--SAMPLE_FREQ', type=int, default=100)
+    parser.add_argument('--resolution', type=str, default='854:480')
     args = parser.parse_args()
-    prepare_images(args.pid, args.epic_set)
+    prepare_images(args.pid, args.epic_set, args.SAMPLE_FREQ)

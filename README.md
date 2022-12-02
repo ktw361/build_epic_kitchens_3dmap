@@ -63,6 +63,12 @@ unique_objects =
 
 Colmap projects (intermediate outputs) will be stored in `./projects`.
 
+# Software versions
+
+- ffmpeg: 4.2.2
+- colmap: 3.8
+- ceres: 2.2.0
+
 # Interprete IMU data
 
 - In https://github.com/epic-kitchens/VISOR-FrameExtraction:
