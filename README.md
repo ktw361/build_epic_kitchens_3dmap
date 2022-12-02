@@ -67,7 +67,8 @@ Colmap projects (intermediate outputs) will be stored in `./projects`.
 
 - ffmpeg: 4.2.2
 - colmap: 3.8
-- ceres: 2.2.0
+- ceres: 2.2.0 or 2.0.0
+- boost: 1.71.0
 
 # Interprete IMU data
 

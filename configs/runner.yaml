@@ -7,10 +7,9 @@ hydra:
   run:
     dir: ./projects/${now:%Y-%m-%d}/${proj_name}
 
-images: ???
-is_nomask: False
-is_simplemask: False
-masks: ???
+images: ./visor_data
+image_list_path: ???
+mask_mapping_path: ???
 
 matcher: ???  # '32K', '256K', '1M', 
               # 'SEQ', 'SEQ-32K', 'SEQ-256K', 'SEQ-1M'
@@ -19,11 +18,28 @@ matcher: ???  # '32K', '256K', '1M',
 #   `overlap` is important, default 10
 #   can also perform vocab tree matching, 
 #   `loop_detection_period`, every 10 frames
+# Defaults settings:
+#   quadratic_overlap=1
+#   loop_detection=true
+#   overlap=10
+#   loop_detection_period=10
+#   loop_detection_num_images=50
+#   loop_detection_num_nearest_neighbors=1
+#   loop_detection_num_checks=256
+#   loop_detection_num_images_after_verification=0
+#   loop_detection_max_num_features=-1
 
 # For vocab matching, 
 #   `num_images` default 100
+#   `num_nearest_neighbors` default 5
 #   VocabTreeMatching.match_list_path can set matching images
-
+# Defaults settings:
+#  num_images=100
+#  num_nearest_neighbors=5
+#  num_checks=256
+#  num_images_after_verification=0
+#  max_num_features=-1
+#  match_list_path=
 
 hierarchical_mapper: False
 

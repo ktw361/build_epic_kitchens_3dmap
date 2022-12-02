@@ -33,19 +33,21 @@ class SparseProj:
         self.cameras_raw = _safe_read(f'{prefix}/cameras.bin', colmap_utils.read_cameras_binary)
         self.points_raw  = _safe_read(f'{prefix}/points3D.bin', colmap_utils.read_points3d_binary)
         images_registered = _safe_read(f'{prefix}/images.bin', colmap_utils.read_images_binary)
-        self.images_registered = sorted(images_registered, key = lambda x: x.name)
+        if images_registered is not None:
+            self.images_registered = sorted(images_registered, key = lambda x: x.name)
 
-        cfg = OmegaConf.load(proj_root/'.hydra/config.yaml')
-        self.image_path = proj_root/'images'
-        self.is_nomask = False
-        self.is_simplemask = False
-        if cfg.is_nomask:
-            self.is_nomask = True
-        elif cfg.is_simplemask:
-            self.is_simplemask = True
-            self.camera_mask_path = glob.glob(str(proj_root/'*.png'))[0]
-        else:
-            self.mask_path = proj_root/'masks'
+        if os.path.exists(proj_root/'.hydra/config.yaml'):
+            cfg = OmegaConf.load(proj_root/'.hydra/config.yaml')
+            self.image_path = proj_root/'images'
+            self.is_nomask = False
+            self.is_simplemask = False
+            if cfg.is_nomask:
+                self.is_nomask = True
+            elif cfg.is_simplemask:
+                self.is_simplemask = True
+                self.camera_mask_path = glob.glob(str(proj_root/'*.png'))[0]
+            else:
+                self.mask_path = proj_root/'masks'
 
         # Build point cloud
         if self.points_raw is not None:

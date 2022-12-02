@@ -21,10 +21,10 @@ from lib.constants import VOCAB_32K, VOCAB_256K, VOCAB_1M
 
 """ Usage:
 python scripts/runner.py  \
-    images=projects/bases/P01_visor_medium/images \
-    masks=projects/bases/P01_visor_medium/masks \
-    matcher=32K \
-    proj_name=P01-simple-mask
+    image_list_path=sampling/txt/P01/image_list.txt
+    mask_mapping_path=sampling/txt/P01/mapping.txt
+    matcher=SEQ-32K \
+    proj_name=P01-sample-v1
 """
 
 
@@ -48,30 +48,13 @@ class Runner:
         self.proj_dir = proj_dir  # e.g. './colmap_projects/P01_103'
 
         # Process images path
-        src_images_path = to_absolute_path(cfg.images)
-        self.image_path = proj_dir/'images'
-        if cfg.link_image_dir:
-            os.symlink(src_images_path, self.image_path, target_is_directory=True)
-
-        # Deal with NOMASK, SimpleMask or Visor Mask
-        self.is_nomask = False
-        self.is_simplemask = False
-        if cfg.is_nomask:
-            self.is_nomask = True 
-        elif cfg.is_simplemask:
-            # Auto determine mask size
-            self.is_simplemask = True
-            probe_img = osp.join(self.image_path, os.listdir(self.image_path)[0])
-            probe_img = Image.open(probe_img)
-            camera_mask_path = f'simple_mask_{probe_img.width}x{probe_img.height}.png'
-            self.camera_mask_path = to_absolute_path(f'./extra/{camera_mask_path}')
-            shutil.copyfile(self.camera_mask_path, proj_dir/(osp.basename(self.camera_mask_path)))
-        else:
-            src_masks_path = to_absolute_path(cfg.masks)
-            self.mask_path = proj_dir/'masks'
-            # if osp.exists(self.mask_path):
-            #     os.unlink(self.mask_path)
-            os.symlink(src_masks_path, self.mask_path, target_is_directory=True)
+        self.image_path = to_absolute_path(cfg.images)
+        self.image_list_path = self.proj_dir/os.path.basename(cfg.image_list_path)
+        self.mask_mapping_path = self.proj_dir/os.path.basename(cfg.mask_mapping_path)
+        self.image_list_path = to_absolute_path(self.image_list_path)
+        self.mask_mapping_path = to_absolute_path(self.mask_mapping_path)
+        shutil.copyfile(to_absolute_path(cfg.image_list_path), self.image_list_path) 
+        shutil.copyfile(to_absolute_path(cfg.mask_mapping_path), self.mask_mapping_path) 
 
         self.proj_file = proj_dir/'project.ini'
         self.database_path = proj_dir/'database.db'
@@ -133,17 +116,14 @@ class Runner:
         return ret_args
 
     def extract_feature(self):
+        self.logger.info("extract_feature() Started")
         commands = [
             'colmap', 'feature_extractor',
             '--database_path', f'{self.database_path}',
             '--image_path', f'{self.image_path}',
+            '--image_list_path', f'{self.image_list_path}',
+            '--ImageReader.mask_mapping_path', f'{self.mask_mapping_path}',
         ]
-        if self.is_nomask:
-            pass  # Nothing
-        elif self.is_simplemask:
-            commands += ['--ImageReader.camera_mask_path', f'{self.camera_mask_path}']
-        else:
-            commands += ['--ImageReader.mask_path', f'{self.mask_path}']
 
         commands += self._pack_section_arguments([IMAGEREADER, SIFTEXTRACTION])
         print(' '.join(commands), file=self.colmap_log_fd)
@@ -159,6 +139,7 @@ class Runner:
             print(proc.stderr)
 
     def sequential_matching(self):
+        self.logger.info("sequential_matching() Started")
         commands = [
             'colmap', 'sequential_matcher',
             '--database_path', f'{self.database_path}',
@@ -179,6 +160,7 @@ class Runner:
             print(proc.stdout)
 
     def vocab_matching(self):
+        self.logger.info("vocab_matching() Started")
         commands = [
             'colmap', 'vocab_tree_matcher',
             '--database_path', f'{self.database_path}',
@@ -203,6 +185,7 @@ class Runner:
 
         Outputs in `proj_dir/sparse/0`
         """
+        self.logger.info("mapper_run() Started")
         os.makedirs(self.sparse_dir, exist_ok=True)
         mapper = 'mapper' if not hierarchical else 'hierarchical_mapper'
         commands = [

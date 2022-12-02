@@ -18,10 +18,6 @@ Options
     1. Sample at a fixed frequency => bias towards longer videos
     2. Sample each video sample number of frames => belief that video contains equal amount of environment info 
 
-TODO:
-    [ ] use image_list instead of links
-    [ ] image_list in sequential matching?
-    [ ] allow partially mask
 """
 
 from argparse import ArgumentParser
@@ -30,12 +26,13 @@ from pathlib import Path
 import tqdm
 import subprocess
 from lib.utils import get_video_duration
+from libzhifan import io
 
-visor_sparse_root = Path('/media/skynet/DATA/Zhifan/visor-sparse')
-videos_dir = visor_sparse_root/'videos'
-images_dir = visor_sparse_root/'images'
+videos_dir = Path('/media/skynet/DATA/Zhifan/visor-sparse/videos')
+visor_images_dir = Path('./visor_data/sparse_images_medium/')
 
-image_save_dir = Path('./projects/bases')
+image_save_dir = Path('./visor_data/sampled_frames')
+list_save_dir = Path('./sampling/txt')
 
 
 def prepare_images(pid: str, epic_set: str, SAMPLE_FREQ=100, resolution='854:480'):
@@ -53,11 +50,15 @@ def prepare_images(pid: str, epic_set: str, SAMPLE_FREQ=100, resolution='854:480
     else:
         raise ValueError("epic_set")
         
-    all_vids = os.listdir(images_dir)
+    all_vids = os.listdir(visor_images_dir)
     related_vids = [v for v in all_vids 
                     if pid in v and len(v.split('_')[1]) == num_digits]
     related_vids = sorted(related_vids)
     total_frames, total_samples = 0, 0
+
+    image_list = []
+    mask_mapping = []
+
     for vid in related_vids:
         video_file = videos_dir/(vid + '.MP4')
         dur = get_video_duration(video_file)
@@ -72,7 +73,10 @@ def prepare_images(pid: str, epic_set: str, SAMPLE_FREQ=100, resolution='854:480
         for sample_ind in range(1, num_samples+1):
             frame_ind = sample_ind * SAMPLE_FREQ
             time = frame_ind / FPS
-            save_path = str(image_save_dir/vid/f'frame_{frame_ind:010d}.jpg')
+            relative_frame_name = Path(vid)/f'frame_{frame_ind:010d}.jpg'
+            save_path = str(image_save_dir/relative_frame_name)
+            image_list.append(os.path.join('sampled_frames', relative_frame_name))
+
             if os.path.exists(save_path):
                 continue
             command = [
@@ -87,7 +91,7 @@ def prepare_images(pid: str, epic_set: str, SAMPLE_FREQ=100, resolution='854:480
                 f'{save_path}'
             ]
             # print(' '.join(command))
-            proc = subprocess.run(
+            subprocess.run(
                 command,
                 stdout=None,
                 stderr=None,
@@ -95,7 +99,20 @@ def prepare_images(pid: str, epic_set: str, SAMPLE_FREQ=100, resolution='854:480
             pbar.update(1)
         pbar.close()
 
-        # TODO: add visor frames
+        # Add visor frames
+        visor_frames = sorted(os.listdir(visor_images_dir/vid))
+        for visor_frame in visor_frames:
+            frame_name = os.path.join('sparse_images_medium', vid, visor_frame)
+            mask_name = os.path.abspath(os.path.join(
+                'visor_data/sparse_binary_masks_medium', vid, 
+                visor_frame.replace('jpg', 'png')))
+            image_list.append(frame_name)
+            mask_mapping.append([frame_name, mask_name])
+        
+    os.makedirs(list_save_dir/pid, exist_ok=True)
+    io.write_txt(image_list, list_save_dir/pid/'image_list.txt')
+    mask_mapping_text = [' '.join(v) for v in mask_mapping]
+    io.write_txt(mask_mapping_text, list_save_dir/pid/'mapping.txt')
 
     print(f'Total num_frames = {total_frames}, num_samples = {total_samples}')
 
