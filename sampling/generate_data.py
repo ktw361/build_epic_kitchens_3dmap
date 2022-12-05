@@ -6,11 +6,12 @@ from lib.constants import IMG_MED_ROOT, BIN_MASK_MED_ROOT
 
 
 PROJ_BASES = './projects/bases'
+raise DecrepatedWarning
 
-def prepare_visor_medium_kitchen(pid, suffix='visor_medium', 
+def prepare_visor_medium_kitchen(pid, suffix='visor_medium',
                                  is_epic100=False):
     """
-    Generate images and masks under 
+    Generate images and masks under
         `projects/bases/<pid>_visor_medium/images`
         `projects/bases/<pid>_visor_medium/masks`
     """
