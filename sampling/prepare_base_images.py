@@ -33,9 +33,30 @@ visor_images_dir = Path('./visor_data/sparse_images_medium/')
 
 image_save_dir = Path('./visor_data/sampled_frames')
 list_save_dir = Path('./sampling/txt')
+    
+
+FIXED_FREQUENCY = 'fixed_frequency'
+FIXED_NUM_FRAMES = 'fixed_num_frames'
+
+def parse_args():
+    parser = ArgumentParser()
+    parser.add_argument('pid')
+    parser.add_argument('epic_set', choices=['100', '55'])
+    parser.add_argument('strategy', choices=['fixed_frequency', 'fixed_num_frames'])
+    parser.add_argument('--SAMPLE_FREQ', type=int, default=100)
+    parser.add_argument('--NUM_SAMPLES_PER_VIDEO', type=int, default=1000)
+    parser.add_argument('--resolution', type=str, default='854:480')
+    parser.add_argument('--print-info', default=False, action='store_true')
+    args = parser.parse_args()
+    return args
 
 
-def prepare_images(pid: str, epic_set: str, SAMPLE_FREQ=100, resolution='854:480',
+def prepare_images(pid: str, 
+                   epic_set: str, 
+                   strategy: str,
+                   SAMPLE_FREQ=100, 
+                   NUM_SAMPLES_PER_VIDEO=1000,
+                   resolution='854:480',
                    print_info=False):
     """
     Args:
@@ -64,15 +85,22 @@ def prepare_images(pid: str, epic_set: str, SAMPLE_FREQ=100, resolution='854:480
         video_file = videos_dir/(vid + '.MP4')
         dur = get_video_duration(video_file)
         num_frames = int(dur * FPS)
-        num_samples = num_frames // SAMPLE_FREQ
+        if strategy == FIXED_FREQUENCY:
+            sample_frequency = SAMPLE_FREQ
+            num_samples = num_frames // sample_frequency
+        elif strategy == FIXED_NUM_FRAMES:
+            num_samples = NUM_SAMPLES_PER_VIDEO
+            sample_frequency = num_frames // num_samples
+        else:
+            raise ValueError
         total_frames += num_frames
         total_samples += num_samples
-        print(f'{vid} num_frames = {num_frames}\t(duration {int(dur)}s)\tnum_samples = {num_samples}')
+        print(f'{vid} num_frames = {num_frames}\t(duration {int(dur)}s) \tsample_freq = {sample_frequency} \tnum_samples = {num_samples}')
 
         os.makedirs(image_save_dir/vid, exist_ok=True)
         pbar = tqdm.tqdm(total=num_samples, disable=print_info)
         for sample_ind in range(1, num_samples+1):
-            frame_ind = sample_ind * SAMPLE_FREQ
+            frame_ind = sample_ind * sample_frequency
             time = frame_ind / FPS
             relative_frame_name = Path(vid)/f'frame_{frame_ind:010d}.jpg'
             save_path = str(image_save_dir/relative_frame_name)
@@ -114,18 +142,21 @@ def prepare_images(pid: str, epic_set: str, SAMPLE_FREQ=100, resolution='854:480
 
     print(f'Total num_frames = {total_frames}, num_samples = {total_samples}')
     if not print_info:
+        if strategy == FIXED_FREQUENCY:
+            suffix = f'freq{SAMPLE_FREQ}'
+        elif strategy == FIXED_NUM_FRAMES:
+            suffix = f'samples{NUM_SAMPLES_PER_VIDEO}'
         os.makedirs(list_save_dir/pid, exist_ok=True)
-        io.write_txt(image_list, list_save_dir/pid/f'image_list_freq{SAMPLE_FREQ}.txt')
+        io.write_txt(image_list, list_save_dir/pid/f'image_list_{suffix}.txt')
         mask_mapping_text = [' '.join(v) for v in mask_mapping]
-        io.write_txt(mask_mapping_text, list_save_dir/pid/f'mapping_freq{SAMPLE_FREQ}.txt')
+        io.write_txt(mask_mapping_text, list_save_dir/pid/f'mapping_{suffix}.txt')
 
 
 if __name__ == '__main__':
-    parser = ArgumentParser()
-    parser.add_argument('pid')
-    parser.add_argument('epic_set', choices=['100', '55'])
-    parser.add_argument('--SAMPLE_FREQ', type=int, default=100)
-    parser.add_argument('--resolution', type=str, default='854:480')
-    parser.add_argument('--print-info', default=False, action='store_true')
-    args = parser.parse_args()
-    prepare_images(args.pid, args.epic_set, args.SAMPLE_FREQ, print_info=args.print_info)
+    args = parse_args()
+    prepare_images(
+        args.pid, args.epic_set, 
+        strategy=args.strategy, 
+        SAMPLE_FREQ=args.SAMPLE_FREQ, 
+        NUM_SAMPLES_PER_VIDEO=args.NUM_SAMPLES_PER_VIDEO,
+        print_info=args.print_info)
