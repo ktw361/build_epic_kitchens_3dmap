@@ -70,13 +70,6 @@ Colmap projects (intermediate outputs) will be stored in `./projects`.
 - ceres: 2.2.0 or 2.0.0
 - boost: 1.71.0
 
-# Interprete IMU data
-
-- In https://github.com/epic-kitchens/VISOR-FrameExtraction:
-https://raw.githubusercontent.com/epic-kitchens/VISOR-FrameExtraction/main/frames_to_timestamps.json
-
-- unit: ACCL in m/s^2, GYRO in rad/s
-
 # GoPro Settings
 
 ## EPIC-KITCHENS-100 Settings
@@ -120,3 +113,24 @@ Special cases:
 - [EPIC-100 README](https://data.bris.ac.uk/datasets/2g1n6qdydwa9u22shpxqzp0t8m/readme.txt)
 - [Hero7 FOV Info](https://gopro.com/help/articles/question_answer/hero7-field-of-view-fov-information?sf96748270=1)
 - [EPIC-55 README](https://data.bris.ac.uk/datasets/3h91syskeag572hl6tvuovwv4d/readme.txt)
+
+# Interprete IMU data
+
+- unit: ACCL in m/s^2, GYRO in rad/s
+
+- In https://github.com/epic-kitchens/VISOR-FrameExtraction:
+https://raw.githubusercontent.com/epic-kitchens/VISOR-FrameExtraction/main/frames_to_timestamps.json
+
+## Techinical data of IMU in GoPro 7
+
+GoPro8 uses BMI260, according to [this article](https://gethypoxic.com/blogs/technical/gopro-hero8-teardown),
+GoPro 7 uses BMI250; however, BMI250 technical data hasn't been found online.
+
+- [IMU BMI260](https://www.bosch-sensortec.com/products/motion-sensors/imus/bmi260/)
+
+Compare BMI260 to [the IMU used in euroc dataset](https://www.analog.com/media/en/technical-documentation/data-sheets/adis16448.pdf)
+
+## Calibration and more
+
+https://github.com/urbste/ORB_SLAM3
+

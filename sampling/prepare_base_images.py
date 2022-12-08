@@ -18,6 +18,10 @@ Options
     1. Sample at a fixed frequency => bias towards longer videos
     2. Sample each video sample number of frames => belief that video contains equal amount of environment info
 
+TODO:
+    use epic original rgb images instead of running ffmpeg (resolution 456x256)
+    /media/skynet/DATA/Datasets/epic-100/rgb 
+
 """
 
 from argparse import ArgumentParser
@@ -33,7 +37,7 @@ visor_images_dir = Path('./visor_data/sparse_images_medium/')
 
 image_save_dir = Path('./visor_data/sampled_frames')
 list_save_dir = Path('./sampling/txt')
-    
+
 
 FIXED_FREQUENCY = 'fixed_frequency'
 FIXED_NUM_FRAMES = 'fixed_num_frames'
@@ -51,10 +55,10 @@ def parse_args():
     return args
 
 
-def prepare_images(pid: str, 
-                   epic_set: str, 
+def prepare_images(pid: str,
+                   epic_set: str,
                    strategy: str,
-                   SAMPLE_FREQ=100, 
+                   SAMPLE_FREQ=100,
                    NUM_SAMPLES_PER_VIDEO=1000,
                    resolution='854:480',
                    print_info=False):
@@ -95,7 +99,8 @@ def prepare_images(pid: str,
             raise ValueError
         total_frames += num_frames
         total_samples += num_samples
-        print(f'{vid} num_frames = {num_frames}\t(duration {int(dur)}s) \tsample_freq = {sample_frequency} \tnum_samples = {num_samples}')
+        visor_frames = sorted(os.listdir(visor_images_dir/vid))
+        print(f'{vid} num_frames = {num_frames}\t(duration {int(dur)}s) \tsample_freq = {sample_frequency} \tnum_samples = {num_samples} \tnum_visor = {len(visor_frames)}')
 
         os.makedirs(image_save_dir/vid, exist_ok=True)
         pbar = tqdm.tqdm(total=num_samples, disable=print_info)
@@ -131,7 +136,6 @@ def prepare_images(pid: str,
         pbar.close()
 
         # Add visor frames
-        visor_frames = sorted(os.listdir(visor_images_dir/vid))
         for visor_frame in visor_frames:
             frame_name = os.path.join('sparse_images_medium', vid, visor_frame)
             mask_name = os.path.abspath(os.path.join(
@@ -155,8 +159,8 @@ def prepare_images(pid: str,
 if __name__ == '__main__':
     args = parse_args()
     prepare_images(
-        args.pid, args.epic_set, 
-        strategy=args.strategy, 
-        SAMPLE_FREQ=args.SAMPLE_FREQ, 
+        args.pid, args.epic_set,
+        strategy=args.strategy,
+        SAMPLE_FREQ=args.SAMPLE_FREQ,
         NUM_SAMPLES_PER_VIDEO=args.NUM_SAMPLES_PER_VIDEO,
         print_info=args.print_info)
