@@ -48,13 +48,16 @@ class Runner:
         self.proj_dir = proj_dir  # e.g. './colmap_projects/P01_103'
 
         # Process images path
-        self.image_path = to_absolute_path(cfg.images)
+        self.image_path = to_absolute_path(cfg.image_path)
         self.image_list_path = self.proj_dir/os.path.basename(cfg.image_list_path)
-        self.mask_mapping_path = self.proj_dir/os.path.basename(cfg.mask_mapping_path)
         self.image_list_path = to_absolute_path(self.image_list_path)
-        self.mask_mapping_path = to_absolute_path(self.mask_mapping_path)
         shutil.copyfile(to_absolute_path(cfg.image_list_path), self.image_list_path) 
-        shutil.copyfile(to_absolute_path(cfg.mask_mapping_path), self.mask_mapping_path) 
+        if cfg.mask_mapping_path != "":
+            self.mask_mapping_path = self.proj_dir/os.path.basename(cfg.mask_mapping_path)
+            self.mask_mapping_path = to_absolute_path(self.mask_mapping_path)
+            shutil.copyfile(to_absolute_path(cfg.mask_mapping_path), self.mask_mapping_path) 
+        else:
+            self.mask_mapping_path = None
 
         self.proj_file = proj_dir/'project.ini'
         self.database_path = proj_dir/'database.db'
@@ -122,8 +125,9 @@ class Runner:
             '--database_path', f'{self.database_path}',
             '--image_path', f'{self.image_path}',
             '--image_list_path', f'{self.image_list_path}',
-            '--ImageReader.mask_mapping_path', f'{self.mask_mapping_path}',
         ]
+        if self.mask_mapping_path is not None:
+            commands += ['--ImageReader.mask_mapping_path', f'{self.mask_mapping_path}']
 
         commands += self._pack_section_arguments([IMAGEREADER, SIFTEXTRACTION])
         print(' '.join(commands), file=self.colmap_log_fd)
