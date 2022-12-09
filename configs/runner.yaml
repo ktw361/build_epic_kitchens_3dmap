@@ -7,9 +7,9 @@ hydra:
   run:
     dir: ./projects/${now:%Y-%m-%d}/${proj_name}
 
-images: ./visor_data
+image_path: ./visor_data
 image_list_path: ???
-mask_mapping_path: ???
+mask_mapping_path: ""
 
 matcher: ???  # '32K', '256K', '1M', 
               # 'SEQ', 'SEQ-32K', 'SEQ-256K', 'SEQ-1M'

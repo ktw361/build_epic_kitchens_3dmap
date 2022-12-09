@@ -253,7 +253,7 @@ class ImageReader:
 
         if os.path.isdir(src):
             self.src_type = 'dir'
-            self.fpaths = sorted(glob(os.path.join(src, '*')))
+            self.fpaths = sorted(glob(os.path.join(src, '*.jpg')))
         elif os.path.isfile(src) and os.path.splitext(src)[1] == '.tar':
             self.tar = tarfile.open(src)
             self.src_type = 'tar'

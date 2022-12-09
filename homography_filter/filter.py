@@ -7,7 +7,7 @@ from matplotlib import pyplot as plt
 from collections import defaultdict
 import time
 
-from .lib import *
+from homography_filter.lib import *
 
 
 def parse_args():
@@ -17,8 +17,9 @@ def parse_args():
         type=str,
     )
     parser.add_argument(
-        "--dir_dst",
+        "--dst_file",
         type=str,
+        required=True,
     )
     parser.add_argument(
         "--overlap",
@@ -97,5 +98,9 @@ if __name__ == '__main__':
     graph = calc_graph(homographies, **vars(args))
 
     fpaths_filtered = graph2fpaths(graph)
+    lines = [v+'\n' for v in fpaths_filtered]
+    with open(args.dst_file, 'w') as fp:
+        fp.writelines(lines)
+    # io.write_txt(fpaths_filtered, args.dst_file)
 
-    save(fpaths_filtered, args)
+    # save(fpaths_filtered, args)
