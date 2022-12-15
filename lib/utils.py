@@ -1,5 +1,8 @@
 from typing import Union, Tuple
+import os.path as osp
 import itertools
+import tqdm
+from pathlib import Path
 import re
 import glob
 import numpy as np
@@ -103,3 +106,48 @@ def get_video_duration(filename):
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT)
     return float(result.stdout)
+
+
+def ffmpeg_extract(vid: str, 
+                   frame_indices: list, 
+                   FPS: int,
+                   resolution='854:480',
+                   save_root=Path('./visor_data/sampled_frames'),
+                   return_frame_path_only=False,
+                   ):
+    videos_dir = Path('/media/skynet/DATA/Zhifan/visor-sparse/videos')
+    video_file = videos_dir/(vid + '.MP4')
+
+    if return_frame_path_only:
+        frame_list = []
+        for frame_ind in frame_indices:
+            time = frame_ind / FPS
+            save_path = save_root/vid/f'frame_{frame_ind:010d}.jpg'
+            frame_list.append(str(save_path))
+        return frame_list
+
+    pbar = tqdm.tqdm(total=len(frame_indices))
+    for frame_ind in frame_indices:
+        time = frame_ind / FPS
+        save_path = save_root/vid/f'frame_{frame_ind:010d}.jpg'
+        if osp.exists(save_path):
+            continue
+    
+        command = [
+            'ffmpeg',
+            '-loglevel', 'error',
+            '-threads', str(16),
+            '-ss', str(time),
+            '-i', str(video_file),
+            '-qscale:v', '4', '-qscale', '2',
+            '-vf', f'scale={resolution}',
+            '-frames:v', '1',
+            f'{save_path}'
+        ]
+        # print(' '.join(command))
+        subprocess.run(
+            command,
+            stdout=None,
+            stderr=None,
+            check=True, text=True)
+        pbar.update(1)

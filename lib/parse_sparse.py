@@ -39,15 +39,6 @@ class SparseProj:
         if os.path.exists(proj_root/'.hydra/config.yaml'):
             cfg = OmegaConf.load(proj_root/'.hydra/config.yaml')
             self.image_path = proj_root/'images'
-            self.is_nomask = False
-            self.is_simplemask = False
-            if cfg.is_nomask:
-                self.is_nomask = True
-            elif cfg.is_simplemask:
-                self.is_simplemask = True
-                self.camera_mask_path = glob.glob(str(proj_root/'*.png'))[0]
-            else:
-                self.mask_path = proj_root/'masks'
 
         # Build point cloud
         if self.points_raw is not None:

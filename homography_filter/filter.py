@@ -73,25 +73,12 @@ def save(fpaths_filtered, args):
 
 
 """ Possible usage:
-VID=P01_01; 
-DIR_SRC=/work/vadim/datasets/visor/2v6cgv1x04ol22qp9rm9x2j6a7/EPIC-KITCHENS-frames/tar/; 
-python -m frame_similarity_filter.filter \
-    --src=$DIR_SRC/$VID.tar \
-    --dir_dst=filtered/$VID
+python homography_filter/filter.py \
+    --src ~/data/epic_rgb_frames/P01/P01_09 \
+    --dst_file /home/skynet/Zhifan/build_kitchens_3dmap/sampling/txt/P01_09/image_list_homo.txt 
 """
 if __name__ == '__main__':
     args = parse_args()
-
-    # src = f'/work/vadim/datasets/visor/2v6cgv1x04ol22qp9rm9x2j6a7/' + \
-    # 'EPIC-KITCHENS-frames/rgb_frames/P28_05'
-    # args.src = '/work/vadim/datasets/visor/2v6cgv1x04ol22qp9rm9x2j6a7/' + \
-    # 'EPIC-KITCHENS-frames/tar/P28_05.tar'
-    # args.dir_dst = 'debug'
-    # args.frame_range_max = 1000
-    # print('---')
-    # print('TODO: QUICK FIX FOR "DARK"/UNINFORMATIVE FRAMES')
-    # print('---')
-    # args.frame_range_min = 1000
 
     homographies = make_homography_loader(args)
 
@@ -101,6 +88,6 @@ if __name__ == '__main__':
     lines = [v+'\n' for v in fpaths_filtered]
     with open(args.dst_file, 'w') as fp:
         fp.writelines(lines)
-    # io.write_txt(fpaths_filtered, args.dst_file)
 
+    # io.write_txt(fpaths_filtered, args.dst_file)
     # save(fpaths_filtered, args)
