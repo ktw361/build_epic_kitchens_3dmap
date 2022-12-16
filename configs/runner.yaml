@@ -43,4 +43,4 @@ matcher: ???  # '32K', '256K', '1M',
 
 hierarchical_mapper: False
 
-camera_model: 'SIMPLE_RADIAL'
+camera_model: 'OPENCV'  # 'SIMPLE_RADIAL'
