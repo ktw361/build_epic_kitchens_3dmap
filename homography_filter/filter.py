@@ -86,6 +86,9 @@ if __name__ == '__main__':
 
     fpaths_filtered = graph2fpaths(graph)
     lines = [v+'\n' for v in fpaths_filtered]
+    dir_name = os.path.dirname(args.dst_file)
+    if not os.path.exists(dir_name):
+        os.makedirs(dir_name)
     with open(args.dst_file, 'w') as fp:
         fp.writelines(lines)
 

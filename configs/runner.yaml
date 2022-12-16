@@ -1,6 +1,5 @@
 proj_name: ???
 
-link_image_dir: True
 verbose: False
 
 hydra:
