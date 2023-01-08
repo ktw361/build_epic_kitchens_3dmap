@@ -29,7 +29,7 @@ import os
 from pathlib import Path
 import tqdm
 import subprocess
-from lib.utils import get_video_duration
+from lib.utils import get_video_duration, ffmpeg_extract
 from libzhifan import io
 
 videos_dir = Path('/media/skynet/DATA/Zhifan/visor-sparse/videos')
@@ -103,10 +103,10 @@ def prepare_images(pid: str,
         print(f'{vid} num_frames = {num_frames}\t(duration {int(dur)}s) \tsample_freq = {sample_frequency} \tnum_samples = {num_samples} \tnum_visor = {len(visor_frames)}')
 
         os.makedirs(image_save_dir/vid, exist_ok=True)
-        pbar = tqdm.tqdm(total=num_samples, disable=print_info)
+        frame_indices = []
         for sample_ind in range(1, num_samples+1):
             frame_ind = sample_ind * sample_frequency
-            time = frame_ind / FPS
+            frame_indices.append(frame_ind)
             relative_frame_name = Path(vid)/f'frame_{frame_ind:010d}.jpg'
             save_path = str(image_save_dir/relative_frame_name)
             image_list.append(os.path.join('sampled_frames', relative_frame_name))
@@ -115,25 +115,8 @@ def prepare_images(pid: str,
                 continue
             if print_info:
                 continue
-            command = [
-                'ffmpeg',
-                '-loglevel', 'error',
-                '-threads', str(16),
-                '-ss', str(time),
-                '-i', str(video_file),
-                '-qscale:v', '4', '-qscale', '2',
-                '-vf', f'scale={resolution}',
-                '-frames:v', '1',
-                f'{save_path}'
-            ]
-            # print(' '.join(command))
-            subprocess.run(
-                command,
-                stdout=None,
-                stderr=None,
-                check=True, text=True)
-            pbar.update(1)
-        pbar.close()
+        ffmpeg_extract(vid, frame_indices, FPS=FPS, resolution=resolution,
+                       save_root=image_save_dir)
 
         # Add visor frames
         for visor_frame in visor_frames:

@@ -80,6 +80,9 @@ python homography_filter/filter.py \
 if __name__ == '__main__':
     args = parse_args()
 
+    if os.path.exists(args.dst_file):
+        print(f"{args.dst_file} already exitsts.")
+        exit(0)
     homographies = make_homography_loader(args)
 
     graph = calc_graph(homographies, **vars(args))
