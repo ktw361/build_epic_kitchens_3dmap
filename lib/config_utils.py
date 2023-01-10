@@ -1,5 +1,6 @@
 import io
 import configparser
+from omegaconf import DictConfig, OmegaConf
 
 
 def read_ini(fpath: str) -> configparser.ConfigParser:
@@ -22,6 +23,12 @@ def write_ini(config: configparser.ConfigParser, fpath: str):
         content = fp.readlines()[1:]  # Get rid of header
         # content = [v.replace(' ', '') for v in content if v != '\n']
         ofp.writelines(content)
+
+
+def ini_to_yaml(config: configparser.ConfigParser) -> DictConfig:
+    return OmegaConf.create(
+        {section: dict(config[section]) for section in config.sections()}
+    )
     
 
 def print_cfg(config: configparser.ConfigParser):
