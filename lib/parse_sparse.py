@@ -35,6 +35,7 @@ class SparseProj:
         images_registered = _safe_read(f'{prefix}/images.bin', colmap_utils.read_images_binary)
         if images_registered is not None:
             self.images_registered = sorted(images_registered, key = lambda x: x.name)
+            self.images_registered_names = {v.name: v for v in self.images_registered}
 
         if os.path.exists(proj_root/'.hydra/config.yaml'):
             cfg = OmegaConf.load(proj_root/'.hydra/config.yaml')
