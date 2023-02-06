@@ -2,7 +2,9 @@ import os
 import subprocess
 from libskynet import epic_rgb, visor_sparse
 
-my_pid = ['P01', 'P09', 'P13', 'P31', 'P32', 'P33', 'P34', 'P35', 'P36', 'P37']
+my_pid = ['P01', 'P02', 'P03', 'P04', 'P05', 'P09', 
+          'P10', 'P11', 'P12', 'P13', 'P14', 'P15',
+          'P28', 'P31', 'P32', 'P33', 'P34', 'P35', 'P36', 'P37']
 need_vids = [v for v in epic_rgb.avail_vids if v[:3] in my_pid]
 
 for vid in need_vids:

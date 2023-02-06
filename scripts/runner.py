@@ -51,7 +51,10 @@ class Runner:
         self.image_path = to_absolute_path(cfg.image_path)
         self.image_list_path = self.proj_dir/os.path.basename(cfg.image_list_path)
         self.image_list_path = to_absolute_path(self.image_list_path)
-        shutil.copyfile(to_absolute_path(cfg.image_list_path), self.image_list_path) 
+        try:
+            shutil.copyfile(to_absolute_path(cfg.image_list_path), self.image_list_path) 
+        except shutil.SameFileError:
+            pass
         if cfg.mask_mapping_path != "":
             self.mask_mapping_path = self.proj_dir/os.path.basename(cfg.mask_mapping_path)
             self.mask_mapping_path = to_absolute_path(self.mask_mapping_path)
