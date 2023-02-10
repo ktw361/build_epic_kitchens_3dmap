@@ -1,1 +1,2 @@
 pyquaternion==0.9.9
+git@github.com:zhifanzhu/libzhifan.git
