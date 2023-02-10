@@ -1,11 +1,14 @@
+from typing import Tuple
 from functools import cached_property
+import tqdm
 import numpy as np
 import cv2
 from PIL import Image
 from colmap_converter import colmap_utils
 
 from line_check.line import Line
-from line_check.functions import project_line_image
+from line_check.functions import (
+    project_line_image, point_line_distance)
 
 
 class LineChecker:
@@ -27,6 +30,7 @@ class LineChecker:
             f'{model_dir}/points3D.bin', colmap_utils.read_points3d_binary)
         self.images = _as_list(
             f'{model_dir}/images.bin', colmap_utils.read_images_binary)
+
         self.line = Line(anno_points)
 
         self._pts_status = None  # point status, dict, True if inside
@@ -52,7 +56,11 @@ class LineChecker:
     def num_images(self):
         return len(self.images)
     
-    def get_image(self, image_id: int):
+    @property
+    def ordered_images(self):
+        return [self.images[i] for i in self.ordered_image_ids]
+    
+    def get_image_by_id(self, image_id: int):
         return self.images[image_id]
 
     def aggregate(self,
@@ -92,9 +100,10 @@ class LineChecker:
         return img
 
     def highlight_2d_points(self, 
-                            idx: int, 
+                            image_id: int, 
                             display=('inside', 'outside', 'others')):
         """ Highlight 2d retrieved points
+        See also visualize_compare()
 
         Circle for -1 points (no match in 3D )
         Blue for 3d-matched but not inside
@@ -106,7 +115,7 @@ class LineChecker:
         RED = (255, 0, 0)
         GREEN = (0, 255, 0)
         BLUE = (0, 0, 255)
-        image = self.images[idx]
+        image = self.images[image_id]
         img_name = image.name
         img_path = img_name
         img = np.asarray(Image.open(img_path))
@@ -131,7 +140,7 @@ class LineChecker:
         return img
 
     def visualize_compare(self, 
-                          idx: int, 
+                          image_id: int, 
                           display=('inside', 'outside'),
                           lines=('mid',),
                           debug=False):
@@ -146,11 +155,11 @@ class LineChecker:
         Args:
             idx: int, camera pose index 
         """
-        img_associated = self.highlight_2d_points(idx, display=('inside', 'outside'))
+        img_associated = self.highlight_2d_points(image_id, display=display)
         img = img_associated
 
         mid, ub, lb = project_line_image(
-            self.line, self._radius, self.get_image(idx), self.camera,
+            self.line, self._radius, self.images[image_id], self.camera,
             debug=debug)
         
         for name, line, thick in zip(lines, [mid, ub, lb], [2, 1, 1]):
@@ -160,3 +169,49 @@ class LineChecker:
                 img, np.int32(line[0]), np.int32(line[1]), 
                 color=(255, 255, 0), thickness=thick, lineType=cv2.LINE_AA)
         return img
+    
+    def report_single(self, image_id) -> Tuple:
+        """
+        Returns:
+            (status, error)
+            - status: 'NO_POINT', 'NO_LINE', 'COMPUTE'
+            - error: -1.0 if status != 'COMPUTE'
+                mean d(p, L) / image_size
+        """
+        NO_POINT = 'NO_POINT'
+        NO_LINE = 'NO_LINE'
+        COMPUTE = 'COMPUTE'
+
+        image = self.images[image_id]
+        inside = []
+        for i, pid in enumerate(image.point3D_ids):
+            if pid == -1:
+                continue
+            elif self._pts_status[pid] == True:
+                inside.append(i)
+        inside = image.xys[inside]
+        if len(inside) == 0:
+            return NO_POINT, -1.0
+
+        mid, _, _ = project_line_image(
+            self.line, self._radius, self.images[image_id], self.camera)
+        if mid is None:
+            return NO_LINE, -1.0
+            
+        dists = point_line_distance(inside, mid)
+        error = (dists ** 2)
+        scale_factor = np.sqrt(self.camera.width ** 2 + self.camera.height ** 2)
+        error = error.mean() / scale_factor
+        return COMPUTE, error
+    
+    def report_all(self):
+        """ Report the number of points inside the line
+        """
+        if self._pts_status is None:
+            raise ValueError("Please run aggregate() first")
+        
+        results = []
+        for image_id in tqdm.tqdm(self.ordered_image_ids):
+            r = self.report_single(image_id)
+            results.append(r)
+        return results

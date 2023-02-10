@@ -92,7 +92,7 @@ def project_line_image(line: Line,
     dir_uv = dir_uv * np.array([fx, fy])
     dir_uv = dir_uv / np.linalg.norm(dir_uv)
 
-    # Assume fx = fy
+    # TODO Assume fx = fy
     # TODO: distort
     thickness = radius / cen[2] * fx
     normal = np.array([-dir_uv[1], dir_uv[0]])
@@ -126,8 +126,26 @@ def project_line_image(line: Line,
 
 
 def transform_line(cen, dir, qvec, tvec):
-    """ Transform line from world to camera coordinate """
+    """ Transform line from world to camera coordinate 
+    Returns:
+        cen, dir: (3,) float
+    """
     rot_w2c = quaternion_to_matrix(torch.as_tensor(qvec))
     cen = rot_w2c @ cen + tvec
     dir = rot_w2c @ dir
     return cen.numpy(), dir.numpy()
+
+
+def point_line_distance(points, line):
+    """ Compute distance between points and line
+    Args:
+        points: (N, 2) float
+        line: 
+            -st: (2,) float
+            -ed: (2,) float
+    Returns:
+        dist: (N,) float
+    """
+    st, ed = line
+    dist = np.cross(ed - st, st - points) / np.linalg.norm(ed - st)
+    return dist

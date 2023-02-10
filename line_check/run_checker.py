@@ -3,6 +3,7 @@ import re
 import tqdm
 from argparse import ArgumentParser
 import numpy as np
+import cv2
 from PIL import Image
 from moviepy import editor
 
@@ -36,17 +37,24 @@ def main(args):
         anno_points=anno_points)
     _ = checker.aggregate(radius=radius, return_dict=True)
 
-    vid = re.search('P\d{2}_\d{2,3}', checker.example_data[0].name)[0]
+    # vid = re.search('P\d{2}_\d{2,3}', checker.example_data[0].name)[0]
     fmt = os.path.join(out_dir, '{}')
 
     for i in tqdm.tqdm(checker.ordered_image_ids):
         name = checker.images[i].name
         img = checker.visualize_compare(i)
+        r = checker.report_single(i)
+        if r[0] != 'COMPUTE':
+            text = r[0]
+        else:
+            text = f'err: {r[1]:.3f}'
+        cv2.putText(img, text, (checker.camera.width//3, 32), 
+                    cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
         frame = os.path.basename(name)
         Image.fromarray(img).save(fmt.format(frame))
 
     clip = editor.ImageSequenceClip(sequence=out_dir, fps=args.fps)
-    video_file = os.path.join(out_dir, f'{out_name}-fps{args.fps}.mp4')
+    video_file = os.path.join(out_base, f'{out_name}-fps{args.fps}.mp4')
     clip.write_videofile(video_file)
 
 
