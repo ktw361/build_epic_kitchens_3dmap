@@ -1,6 +1,5 @@
 import numpy as np
 import torch
-from shapely.geometry import LineString, Polygon
 from pytorch3d.transforms import quaternion_to_matrix
 from pytorch3d.transforms import quaternion_to_matrix
 
