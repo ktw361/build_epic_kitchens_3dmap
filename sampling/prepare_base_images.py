@@ -24,6 +24,8 @@ TODO:
 
 """
 
+raise ValueError("Deprecated!")
+
 from argparse import ArgumentParser
 import os
 from pathlib import Path
