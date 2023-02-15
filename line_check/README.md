@@ -14,3 +14,8 @@
 
 - [ ] 2D line angle as error? 
 - radius is a hyperparameter
+
+
+# Note
+
+1. For Open3D WebRTC visualization, `import open3d as o3d` must be put at the very beginning?

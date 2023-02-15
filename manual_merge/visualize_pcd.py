@@ -1,21 +1,17 @@
 import open3d as o3d
 import numpy as np
 from argparse import ArgumentParser
-from line_check.checker import LineChecker
+from manual_merge.ann_model import AnnotatedModel
+from manual_merge.functions import compute_sim3_transform
 
 def parse_args():
     parser = ArgumentParser()
-    parser.add_argument('--model-dir')
+    parser.add_argument('--model-1')
+    parser.add_argument('--model-2')
     return parser.parse_args()
 
 if __name__ == "__main__":
-    # o3d.visualization.webrtc_server.enable_webrtc()
     args = parse_args()
-    anno_points = [
-            4.63313, -0.2672, 2.55641,
-            -5.22596, 0.352575, 3.04684,
-            0.675789, -0.0019428, 2.77022
-            ]
     anno_points = np.asarray(anno_points).reshape(-1, 3)
     checker = LineChecker(args.model_dir,
                           anno_points=anno_points)

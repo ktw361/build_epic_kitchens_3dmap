@@ -19,8 +19,6 @@ class LineChecker:
 
         def _as_list(path, func):
             return func(path)
-            as_list = lambda x: list(dict(x).values())
-            return as_list(func(path))
 
         cameras = _as_list(
             f'{model_dir}/cameras.bin', colmap_utils.read_cameras_binary)
