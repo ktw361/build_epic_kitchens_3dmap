@@ -27,9 +27,12 @@ def main(args):
     os.makedirs(out_dir, exist_ok=True)
 
     anno_points = [
-        4.63313, -0.2672, 2.55641,
-        -5.22596, 0.352575, 3.04684,
-        0.675789, -0.0019428, 2.77022
+        -5.38907, 0.687732, 4.77714,
+4.70254, -2.36873, 2.34974,
+0.700261, -1.09484, 2.75475,
+        # 4.63313, -0.2672, 2.55641,
+        # -5.22596, 0.352575, 3.04684,
+        # 0.675789, -0.0019428, 2.77022
     ]
     anno_points = np.asarray(anno_points).reshape(-1, 3)
 
@@ -40,16 +43,22 @@ def main(args):
     # vid = re.search('P\d{2}_\d{2,3}', checker.example_data[0].name)[0]
     fmt = os.path.join(out_dir, '{}')
 
-    for i in tqdm.tqdm(checker.ordered_image_ids):
-        name = checker.images[i].name
-        img = checker.visualize_compare(i)
-        r = checker.report_single(i)
+    for img_id in tqdm.tqdm(checker.ordered_image_ids):
+        name = checker.images[img_id].name
+        img = checker.visualize_compare(img_id)
+        r = checker.report_single(img_id)
         if r[0] != 'COMPUTE':
             text = r[0]
         else:
             text = f'err: {r[1]:.3f}'
         cv2.putText(img, text, (checker.camera.width//3, 32), 
                     cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
+        frame_number = re.search('\d{10,}', 
+                                 checker.get_image_by_id(img_id).name)[0]
+        cv2.putText(img, frame_number, 
+                    (checker.camera.width//4, checker.camera.height * 31 // 32),
+                    cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
+
         frame = os.path.basename(name)
         Image.fromarray(img).save(fmt.format(frame))
 
