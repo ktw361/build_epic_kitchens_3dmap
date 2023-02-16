@@ -34,8 +34,9 @@ def compute_sim3_transform(pts1: np.ndarray,
     mat[:3, -1] = transl
     mat[-1, -1] = scale
 
-    if np.abs(np.linalg.det(rot) - 1) < 1e-6:
-        raise ValueError("Rotation matrix is not valid")
+    if np.abs(np.linalg.det(rot) - 1) > 1e-6:
+        raise ValueError(
+            "Rotation matrix is not valid, det(R) = %f" % np.linalg.det(rot))
 
     pts1_pred = scale * pts2 @ rot.T + transl
     err = np.sum((pts1 - pts1_pred)**2, axis=0)
