@@ -12,9 +12,12 @@ if __name__ == "__main__":
     # o3d.visualization.webrtc_server.enable_webrtc()
     args = parse_args()
     anno_points = [
-            4.63313, -0.2672, 2.55641,
-            -5.22596, 0.352575, 3.04684,
-            0.675789, -0.0019428, 2.77022
+-5.38907, 0.687732, 4.77714,
+4.70254, -2.36873, 2.34974,
+0.700261, -1.09484, 2.75475,
+            # 4.63313, -0.2672, 2.55641,
+            # -5.22596, 0.352575, 3.04684,
+            # 0.675789, -0.0019428, 2.77022
             ]
     anno_points = np.asarray(anno_points).reshape(-1, 3)
     checker = LineChecker(args.model_dir,

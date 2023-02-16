@@ -12,26 +12,27 @@ def parse_args():
 
 if __name__ == "__main__":
     args = parse_args()
-    anno_points = np.asarray(anno_points).reshape(-1, 3)
-    checker = LineChecker(args.model_dir,
-                          anno_points=anno_points)
 
-    #_ = checker.aggregate(radius=radius, return_dict=True)
+    mod1 = AnnotatedModel(args.model_1)
+    mod2 = AnnotatedModel(args.model_2)
 
-    line_set = o3d.geometry.LineSet()
-    lst = checker.line.vc + 100 * checker.line.dir
-    led = checker.line.vc - 100 * checker.line.dir
-    lines = [lst, led]
-    line_set.points = o3d.utility.Vector3dVector(lines)
-    line_set.lines = o3d.utility.Vector2iVector([[0, 1]])
+    rot, transl, scale, mat, err = compute_sim3_transform(
+        mod1.ordered_landmarks, mod2.ordered_landmarks)
 
-    # create a point cloud
-    points_np = [v.xyz for v in checker.points.values()]
-    points_rgb = [v.rgb / 255 for v in checker.points.values()]
-    pcd = o3d.geometry.PointCloud()
-    pcd.points = o3d.utility.Vector3dVector(points_np)
-    pcd.colors = o3d.utility.Vector3dVector(points_rgb)
+    print('mat: ', mat)
+    print('scale: ', scale)
+    print('err: ', err.reshape(-1, 1))
 
-    o3d.visualization.draw_geometries([line_set, pcd])
+    pcd1_np = [v.xyz for v in mod1.points.values()]
+    pcd1_rgb = [v.rgb / 255 for v in mod1.points.values()]
+    pcd1 = o3d.geometry.PointCloud()
+    pcd1.points = o3d.utility.Vector3dVector(pcd1_np)
+    pcd1.colors = o3d.utility.Vector3dVector(pcd1_rgb)
 
-    # o3d.visualization.draw([line_set, pcd])
+    pcd2_np = [v.xyz * scale @ rot.T + transl for v in mod2.points.values()]
+    pcd2_rgb = [v.rgb / 255 for v in mod2.points.values()]
+    pcd2 = o3d.geometry.PointCloud()
+    pcd2.points = o3d.utility.Vector3dVector(pcd2_np)
+    pcd2.colors = o3d.utility.Vector3dVector(pcd2_rgb)
+
+    o3d.visualization.draw_geometries([pcd1, pcd2])
