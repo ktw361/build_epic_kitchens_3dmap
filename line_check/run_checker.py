@@ -1,5 +1,5 @@
 import os
-import re
+import re, json
 import tqdm
 from argparse import ArgumentParser
 import numpy as np
@@ -14,6 +14,7 @@ def parse_args():
     parser = ArgumentParser()
     parser.add_argument('model_dir', type=str)
     parser.add_argument('--radius', type=float, default=0.2)
+    parser.add_argument('--anno-path', type=str)
     parser.add_argument('--out-name', type=str, help='example: P01_01-homo')
     parser.add_argument('--fps', type=int, default=10)
     return parser.parse_args()
@@ -26,15 +27,9 @@ def main(args):
     out_dir = os.path.join(out_base, args.out_name)
     os.makedirs(out_dir, exist_ok=True)
 
-    anno_points = [
-        -5.38907, 0.687732, 4.77714,
-4.70254, -2.36873, 2.34974,
-0.700261, -1.09484, 2.75475,
-        # 4.63313, -0.2672, 2.55641,
-        # -5.22596, 0.352575, 3.04684,
-        # 0.675789, -0.0019428, 2.77022
-    ]
-    anno_points = np.asarray(anno_points).reshape(-1, 3)
+    with open(args.anno_path, 'r') as fp:
+        anno_points = json.load(fp)
+        anno_points = np.asarray(anno_points).reshape(-1, 3)
 
     checker = LineChecker(args.model_dir,
         anno_points=anno_points)

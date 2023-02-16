@@ -1,4 +1,5 @@
 import open3d as o3d
+import json
 import numpy as np
 from argparse import ArgumentParser
 from line_check.checker import LineChecker
@@ -6,20 +7,15 @@ from line_check.checker import LineChecker
 def parse_args():
     parser = ArgumentParser()
     parser.add_argument('--model-dir')
+    parser.add_argument('--anno-path')
     return parser.parse_args()
 
 if __name__ == "__main__":
     # o3d.visualization.webrtc_server.enable_webrtc()
     args = parse_args()
-    anno_points = [
--5.38907, 0.687732, 4.77714,
-4.70254, -2.36873, 2.34974,
-0.700261, -1.09484, 2.75475,
-            # 4.63313, -0.2672, 2.55641,
-            # -5.22596, 0.352575, 3.04684,
-            # 0.675789, -0.0019428, 2.77022
-            ]
-    anno_points = np.asarray(anno_points).reshape(-1, 3)
+    with open(args.anno_points, 'r') as fp:
+        anno_points = json.load(fp)
+        anno_points = np.asarray(anno_points).reshape(-1, 3)
     checker = LineChecker(args.model_dir,
                           anno_points=anno_points)
 
