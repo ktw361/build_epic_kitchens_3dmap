@@ -13,7 +13,7 @@ def parse_args():
 if __name__ == "__main__":
     # o3d.visualization.webrtc_server.enable_webrtc()
     args = parse_args()
-    with open(args.anno_points, 'r') as fp:
+    with open(args.anno_path, 'r') as fp:
         anno_points = json.load(fp)
         anno_points = np.asarray(anno_points).reshape(-1, 3)
     checker = LineChecker(args.model_dir,
