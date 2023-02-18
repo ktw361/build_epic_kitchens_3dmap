@@ -1,6 +1,8 @@
 from typing import Tuple
 from functools import cached_property
 import tqdm
+import json
+import os.path as osp
 import numpy as np
 import cv2
 from PIL import Image
@@ -15,7 +17,8 @@ class LineChecker:
     
     def __init__(self,
                  model_dir: str,
-                 anno_points: np.ndarray):
+                 anno_path: str,
+                 frames_root: str = None):
 
         def _as_list(path, func):
             return func(path)
@@ -29,7 +32,11 @@ class LineChecker:
         self.images = _as_list(
             f'{model_dir}/images.bin', colmap_utils.read_images_binary)
 
+        with open(anno_path, 'r') as fp:
+            anno_points = json.load(fp)
+            anno_points = np.asarray(anno_points).reshape(-1, 3)
         self.line = Line(anno_points)
+        self.frames_root = frames_root if frames_root is not None else ""
 
         self._pts_status = None  # point status, dict, True if inside
         self._radius = None
@@ -115,7 +122,7 @@ class LineChecker:
         BLUE = (0, 0, 255)
         image = self.images[image_id]
         img_name = image.name
-        img_path = img_name
+        img_path = osp.join(self.frames_root, img_name)
         img = np.asarray(Image.open(img_path))
 
         inside, outside, others = [], [], []
@@ -198,6 +205,7 @@ class LineChecker:
             
         dists = point_line_distance(inside, mid)
         error = (dists ** 2)
+        error = error / self._radius  # TODO
         scale_factor = np.sqrt(self.camera.width ** 2 + self.camera.height ** 2)
         error = error.mean() / scale_factor
         return COMPUTE, error

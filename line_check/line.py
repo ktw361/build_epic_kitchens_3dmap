@@ -15,7 +15,6 @@ def line_fit(points: np.ndarray) -> np.ndarray:
     np.linalg.svd(centered)
 
     uu, dd, vv = np.linalg.svd(centered)
-    print(uu, dd, vv)
     dir = vv[0]
     dir = dir / np.linalg.norm(dir)
     return avg, dir

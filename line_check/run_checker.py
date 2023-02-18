@@ -16,23 +16,21 @@ def parse_args():
     parser.add_argument('--radius', type=float, default=0.2)
     parser.add_argument('--anno-path', type=str)
     parser.add_argument('--out-name', type=str, help='example: P01_01-homo')
+    parser.add_argument('--frames-root', type=str)
     parser.add_argument('--fps', type=int, default=10)
     return parser.parse_args()
 
 
 def main(args):
     radius = args.radius
+    frames_root = args.frames_root
     out_base = 'outputs/line_check/'
     out_name = args.out_name
     out_dir = os.path.join(out_base, args.out_name)
     os.makedirs(out_dir, exist_ok=True)
 
-    with open(args.anno_path, 'r') as fp:
-        anno_points = json.load(fp)
-        anno_points = np.asarray(anno_points).reshape(-1, 3)
-
     checker = LineChecker(args.model_dir,
-        anno_points=anno_points)
+        anno_path=args.anno_path, frames_root=frames_root)
     _ = checker.aggregate(radius=radius, return_dict=True)
 
     # vid = re.search('P\d{2}_\d{2,3}', checker.example_data[0].name)[0]
