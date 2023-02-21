@@ -1,3 +1,4 @@
+from typing import List
 from functools import cached_property
 from colmap_converter import colmap_utils
 
@@ -46,7 +47,7 @@ class ColmapModel:
         return len(self.images)
     
     @property
-    def ordered_images(self):
+    def ordered_images(self) -> List[colmap_utils.BaseImage]:
         return [self.images[i] for i in self.ordered_image_ids]
     
     def get_image_by_id(self, image_id: int):
