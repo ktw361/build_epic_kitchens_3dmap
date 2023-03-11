@@ -6,14 +6,14 @@ from pytorch3d.transforms import quaternion_to_matrix
 from line_check.line import Line
 
 
-def line_rectangle_check(cen, dir, rect, 
+def line_rectangle_check(cen, dir, rect,
                          eps=1e-6,
                          debug=False):
     """
     Args:
         cen, dir: (2,) float
         rect: Tuple (xmin, ymin, xmax, ymax)
-    
+
     Returns:
         num_intersect: int
         inters: (num_intersect, 2) float
@@ -68,11 +68,11 @@ def project_line_image(line: Line,
         image:
             -qvec: (4,) world to cam
             -tvec: (3,) world to cam
-        camera: 
-            -width, 
+        camera:
+            -width,
             -height
             -params (8,) fx, fy, cx, cy, k1, k2, p1, p2
-                typical value 
+                typical value
                     2.48599189e+02,  2.49046265e+02,  2.28000000e+02,  1.28000000e+02,
                     -2.32192380e-02,  5.96217313e-03, -1.31808242e-03,  1.88818864e-03
 
@@ -88,9 +88,13 @@ def project_line_image(line: Line,
 
     cen_uv = cen[:2] / cen[2]
     cen_uv = cen_uv * np.array([fx, fy]) + np.array([cx, cy])
-    dir_uv = dir[:2] / dir[2]
+    dir_uv = ((dir + cen)[:2] / (dir + cen)[2]) - (cen[:2] / cen[2])
     dir_uv = dir_uv * np.array([fx, fy])
     dir_uv = dir_uv / np.linalg.norm(dir_uv)
+    # Previous wrong implementation:
+    # dir_uv = dir[:2] / dir[2]
+    # dir_uv = dir_uv * np.array([fx, fy])
+    # dir_uv = dir_uv / np.linalg.norm(dir_uv)
 
     # TODO Assume fx = fy
     # TODO: distort
@@ -110,13 +114,13 @@ def project_line_image(line: Line,
         ub_uv, dir_uv, (0, 0, width, height), debug=False)
     if num_inters == 2:
         ub_line = (inters[0], inters[1])
-    
+
     lb_line = None
     num_inters, inters = line_rectangle_check(
         lb_uv, dir_uv, (0, 0, width, height), debug=False)
     if num_inters == 2:
         lb_line = (inters[0], inters[1])
-    
+
     if debug:
         print('cen', cen)
         print('ub', ub_line)
@@ -126,7 +130,7 @@ def project_line_image(line: Line,
 
 
 def transform_line(cen, dir, qvec, tvec):
-    """ Transform line from world to camera coordinate 
+    """ Transform line from world to camera coordinate
     Returns:
         cen, dir: (3,) float
     """
@@ -140,7 +144,7 @@ def point_line_distance(points, line):
     """ Compute distance between points and line
     Args:
         points: (N, 2) float
-        line: 
+        line:
             -st: (2,) float
             -ed: (2,) float
     Returns:
