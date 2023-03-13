@@ -1,10 +1,6 @@
 # TODO
 
-- [ ] Frustum
 - [ ] Activate PCD
-- [ ] Trajectory
-- [ ] Save as images
-- [ ] Image
 
 
 # Open3d
@@ -17,6 +13,8 @@ No OffscreenRender
 
 ## 0.16.0 (Offscreen) [Current Use]
 pip install open3d==0.16.0 (need to apt install osmesa also?)
+
+Need to decide best FOV visually in Open3D gui, but Tuning FOV is fun!
 
 ### Template
 ```python
