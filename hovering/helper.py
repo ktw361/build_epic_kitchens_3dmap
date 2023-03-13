@@ -99,7 +99,7 @@ def get_trajectory(pos_history,
     """
     pos_history = np.asarray(pos_history)[-num_line:]
     colors = [0, 0, 0.6]
-    colors = colors[-len(pos_history):]
+    # colors = colors[-len(pos_history):]
     line_mesh = LineMesh(
         points=pos_history, 
         colors=colors, radius=line_radius)
