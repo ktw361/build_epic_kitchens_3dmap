@@ -14,7 +14,7 @@ from hovering.o3d_line_mesh import LineMesh
 
 class Helper:
     base_colors = {
-        'white': [1, 1, 1, 1],
+        'white': [1, 1, 1, 0.8],
         'red': [1, 0, 0, 1],
     }
 
@@ -54,6 +54,7 @@ def get_frustum(sz=1.0,
     wid = sz
     if camera_height is not None and camera_width is not None:
         hei = wid * camera_height / camera_width
+    else:
         hei = wid
     tl = [wid, hei, sz]
     tr = [-wid, hei, sz]
@@ -96,16 +97,8 @@ def get_trajectory(pos_history,
                    ) -> o3d.geometry.TriangleMesh:
     """ pos_history: absolute position history
     """
-    # TODO: better color
     pos_history = np.asarray(pos_history)[-num_line:]
-    colors = [
-        [0, 0, 1],
-        [0.2, 0, 0.8],
-        [0.4, 0, 0.6],
-        [0.6, 0, 0.4],
-        [0.8, 0, 0.2],
-        [1, 0, 0],
-    ]
+    colors = [0, 0, 0.6]
     colors = colors[-len(pos_history):]
     line_mesh = LineMesh(
         points=pos_history, 

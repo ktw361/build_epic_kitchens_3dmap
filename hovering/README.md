@@ -3,10 +3,14 @@
 - [ ] Activate PCD
 
 
+# Caveats
+open3d rotate() better specify center=(0, 0, 0) !!
+
 # Open3d
 
 ## 0.17.0 (Headless)
 Need to compile with osmesa
+
 Can' control camera
 No OffscreenRender
 
@@ -20,10 +24,11 @@ Need to decide best FOV visually in Open3D gui, but Tuning FOV is fun!
 ```python
 render = rendering.OffscreenRenderer(640, 480)
 
-render.setup_camera(60.0, 
-    lookAt=[0, 0, 0], 
-    location=[5, 10, 3], 
-    up=[0, 0, 1])
+# render.setup_camera(60.0, 
+#     lookAt=[0, 0, 0], 
+#     location=[5, 10, 3], 
+#     up=[0, 0, 1])
+render.setup_camera(fov, lookat, front, up)  # Order is very important!
 render.scene.show_axes(True)
 
 yellow = rendering.MaterialRecord()
