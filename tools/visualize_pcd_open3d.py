@@ -25,6 +25,7 @@ if __name__ == "__main__":
         size=10, origin=[0, 0, 0])
 
     t = - np.float32([0.04346319,1.05888072,2.09330869])
+    t = pcd.get_min_bound()
     rot = pcd.get_rotation_matrix_from_xyz((-np.pi*15/180, 200*np.pi/180, 0))
     pcd.translate(t)
     pcd = pcd.rotate(rot, center=(0, 0, 0))
