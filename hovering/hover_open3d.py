@@ -32,7 +32,7 @@ class HoverRunner:
     up = None
 
     epic_img_x0 = 500
-    epic_img_y0 = -EPIC_HEIGHT
+    epic_img_y0 = 0
     background_color = [1, 1, 1, 2]  # white;  [1, 1, 1, 0] for black
 
     def __init__(self, 
@@ -341,6 +341,8 @@ if __name__ == '__main__':
         runner = RunP02_109()
         runner.out_dir = 'outputs/hover_P02_109_circle'
         runner.background_color = [1, 1, 1, 2]
+        runner.epic_img_x0 = 0
+        runner.epic_img_y0 = 0
         runner.test_single_frame(runner.point_size)
         runner.run_circulating(
             num_loop=2, Radius=16, Height=23)
