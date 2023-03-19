@@ -114,6 +114,45 @@ def read_original(colmap_img: BaseImage, frame_root: str) -> np.ndarray:
     return np.asarray(Image.open(os.path.join(frame_root, colmap_img.name)))
 
 
+import roma
+import torch
+
+def colmap_quaternion_slerp(q0, q1, steps: list) -> np.ndarray:
+    """
+    # Verify the rotation matrix are the same
+    #   p02.model.get_image_by_id(p02.model.ordered_image_ids[0]).qvec2rotmat()
+    #   roma.unitquat_to_rotmat(q0)
+    
+    Note: colmap quaternion is (w, x, y, z),
+    internally we convert to roma quaternion whic his (x, y, z, w)
+    
+    Example Usage:
+    ```
+    q0 = p02.model.get_image_by_id(p02.model.ordered_image_ids[0]).qvec
+    q1 = p02.model.get_image_by_id(p02.model.ordered_image_ids[1]).qvec    
+    steps = torch.tensor([0.0, 0.2, 0.4, 0.6, 0.8])
+    qs = colmap_quaternion_slerp(q0, q1, [0, 0.2, 0.4, 0.6, 0.8, 1.0])
+    ```
+    
+    Args:
+        q0/q1: colmap quaternion (w, x, y, z)
+        steps: list of float.
+    Returns:
+        qs: [N, 4]
+    """
+    q0 = torch.as_tensor(q0).view(-1, 4)
+    q1 = torch.as_tensor(q1).view(-1, 4)
+    steps = torch.as_tensor(steps)
+    
+    # WXZY -> XYZW
+    q0 = q0[:, [1, 2, 3, 0]]
+    q1 = q1[:, [1, 2, 3, 0]]
+    # Or faster: https://github.com/naver/roma/blob/ace63568adb09102984674abbe52e9ba6d562702/roma/utils.py#L316
+    interp = roma.unitquat_slerp(q0, q1, steps, shortest_path=True)  # torch.Tensor, [shape len(steps), 4]
+    interp = interp.view(len(steps), 4)[:, [3, 0, 1, 2]].numpy()
+    return interp
+
+
 # def compute_scene_rotation(o3d_view_dict: dict) -> np.ndarray:
 #     """ Open a open3d gui, rotation the scene s.t. it aligns the xyz-axis,
 #     press Ctrl-C, paste the output dict to this function.
