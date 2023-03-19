@@ -9,7 +9,7 @@ import pycolmap
 import matplotlib.pyplot as plt
 import pandas as pd
 from PIL import Image
-from line_check.vadim import *
+from line_check.impl_vadim.vadim import *
 import numpy as np
 import os
 
@@ -76,6 +76,10 @@ def main(args):
         plt.axis('off')
         im_ = fig2im(f)
         ims.append(im_)
+
+        img_name = image.name
+        save_name = os.path.join('outputs', f'{args.out_name}/{img_name}')
+        Image.fromarray(im_).save(save_name)
         # plt.imshow(im_)
         # plt.show()
 
@@ -86,5 +90,6 @@ if __name__ == '__main__':
 
     args = parse_args()
     os.makedirs('outputs', exist_ok=True)
+    os.makedirs(f'outputs/{args.out_name}', exist_ok=True)
     ims = main(args)
     write_mp4(f'outputs/{args.out_name}', ims)

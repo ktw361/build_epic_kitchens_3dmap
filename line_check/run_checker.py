@@ -12,7 +12,7 @@ from line_check.checker import LineChecker
 
 def parse_args():
     parser = ArgumentParser()
-    parser.add_argument('model_dir', type=str)
+    parser.add_argument('--model_dir', type=str)
     parser.add_argument('--radius', type=float, default=0.2)
     parser.add_argument('--anno-path', type=str)
     parser.add_argument('--out-name', type=str, help='example: P01_01-homo')
@@ -38,7 +38,7 @@ def main(args):
 
     for img_id in tqdm.tqdm(checker.ordered_image_ids):
         name = checker.images[img_id].name
-        img = checker.visualize_compare(img_id)
+        img = checker.visualize_compare(img_id) # , display=display)
         r = checker.report_single(img_id)
         if r[0] != 'COMPUTE':
             text = r[0]
