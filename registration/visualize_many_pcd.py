@@ -1,8 +1,9 @@
 import open3d as o3d
 import numpy as np
 from argparse import ArgumentParser
-from manual_merge.ann_model import AnnotatedModel
-from manual_merge.functions import compute_sim3_transform
+from lib.base_type import ColmapModel
+from registration.functions import compute_relative_pose
+# from manual_merge.functions import compute_sim3_transform
 
 def parse_args():
     parser = ArgumentParser()
