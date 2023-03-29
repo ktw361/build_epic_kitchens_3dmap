@@ -15,7 +15,7 @@ def parse_args():
     parser.add_argument('--model_dir', type=str)
     parser.add_argument('--radius', type=float, default=0.2)
     parser.add_argument('--anno-path', type=str)
-    parser.add_argument('--out-name', type=str, help='example: P01_01-homo')
+    parser.add_argument('--out-name', type=str, help='example: P01_01-homo', required=True)
     parser.add_argument('--frames-root', type=str)
     parser.add_argument('--fps', type=int, default=10)
     return parser.parse_args()
