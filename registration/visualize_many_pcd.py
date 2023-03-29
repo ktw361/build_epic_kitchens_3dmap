@@ -8,6 +8,7 @@ def parse_args():
     parser = ArgumentParser()
     parser.add_argument('--infile')
     parser.add_argument('--alpha', type=float, default=0.5)
+    parser.add_argument('--line-length', type=float, default=20)
     return parser.parse_args()
 
 if __name__ == "__main__":
@@ -64,8 +65,9 @@ if __name__ == "__main__":
     line_dir = base_line[1, :] - base_line[0, :]
 
     line_set = o3d.geometry.LineSet()
-    lst = vc + 100 * line_dir
-    led = vc - 100 * line_dir
+    line_len_half = args.line_length / 2
+    lst = vc + line_len_half * line_dir
+    led = vc - line_len_half * line_dir
     lines = [lst, led]
     line_set.points = o3d.utility.Vector3dVector(lines)
     line_set.lines = o3d.utility.Vector2iVector([[0, 1]])
