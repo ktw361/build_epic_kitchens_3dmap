@@ -58,10 +58,11 @@ def main(args):
         frames_root = osp.join(epic_rgb_root, pid, vid)
 
         model = ColmapModel(model_path)
+        rot, transl, scale = read_transformation(model_info)
+
         if ind == 0:
             line = np.asarray(model_info['line']).reshape(-1, 3)
-            rot, transl, scale = read_transformation(model_info)
-            base_line = line * scale @ rot + transl
+            base_line = line * scale @ rot.T + transl
 
         # Take the base_line in base coordinate, and transform it to single model
         line = inverse_transform_line(rot, transl, scale, base_line)
