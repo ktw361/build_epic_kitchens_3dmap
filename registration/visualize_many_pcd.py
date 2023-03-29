@@ -49,4 +49,29 @@ if __name__ == "__main__":
         pcd.colors = o3d.utility.Vector3dVector(pcd_rgb)
         pcds.append(pcd)
 
-    o3d.visualization.draw_geometries(pcds)
+    ##### Read Line #####
+    def read_transformation(d: dict):
+        rot = np.asarray(d['rot']).reshape(3, 3)
+        transl = np.asarray(d['transl'])
+        scale = d['scale']
+        return rot, transl, scale
+
+    line = model_infos[0]['line']
+    line = np.asarray(line).reshape(-1, 3)
+    rot, transl, scale = read_transformation(model_infos[0])
+    base_line = line * scale @ rot.T + transl
+    vc = (base_line[0, :] + base_line[1, :]) / 2
+    line_dir = base_line[1, :] - base_line[0, :]
+
+    line_set = o3d.geometry.LineSet()
+    lst = vc + 100 * line_dir
+    led = vc - 100 * line_dir
+    lines = [lst, led]
+    line_set.points = o3d.utility.Vector3dVector(lines)
+    line_set.lines = o3d.utility.Vector2iVector([[0, 1]])
+    ##### Read Line End #####
+
+    geoms = [line_set] + pcds
+
+    o3d.visualization.draw_geometries(geoms)
+    # o3d.visualization.draw_geometries_with_editing([pcds])
