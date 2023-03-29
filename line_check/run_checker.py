@@ -33,6 +33,8 @@ def main(args):
         anno_path=args.anno_path, frames_root=frames_root)
     _ = checker.aggregate(radius=radius, return_dict=True)
 
+    # TODO: change to LineCheckFromModel for consistency
+
     # vid = re.search('P\d{2}_\d{2,3}', checker.example_data[0].name)[0]
     fmt = os.path.join(out_dir, '{}')
 

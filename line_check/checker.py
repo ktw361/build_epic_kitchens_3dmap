@@ -1,12 +1,14 @@
 from typing import Tuple
 from functools import cached_property
 import tqdm
-import json
+import json, os, re
 import os.path as osp
 import numpy as np
 import cv2
 from PIL import Image
 from colmap_converter import colmap_utils
+from lib.base_type import ColmapModel
+from moviepy import editor
 
 from line_check.line import Line
 from line_check.functions import (
@@ -221,3 +223,60 @@ class LineChecker:
             r = self.report_single(image_id)
             results.append(r)
         return results
+
+    def write_mp4(self, radius: float, out_name: str, fps=10, out_base='outputs/line_check/'):
+        """ Write mp4 file that project the line on the image 
+
+        Args:
+            out_name: e.g. P01_01
+                - images will be written to <out_base>/<out_name>/frame_%010d.jpg
+                - mp4 will be written to <out_base>/<out_name>.mp4
+        """
+        out_dir = os.path.join(out_base, out_name)
+        os.makedirs(out_dir, exist_ok=True)
+        fmt = os.path.join(out_dir, '{}')
+
+        _ = self.aggregate(radius=radius, return_dict=True)
+
+        for img_id in tqdm.tqdm(self.ordered_image_ids):
+            name = self.images[img_id].name
+            img = self.visualize_compare(img_id) # , display=display)
+            r = self.report_single(img_id)
+            if r[0] != 'COMPUTE':
+                text = r[0]
+            else:
+                text = f'err: {r[1]:.3f}'
+            cv2.putText(img, text, (self.camera.width//3, 32), 
+                        cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
+            frame_number = re.search('\d{10,}', 
+                                    self.get_image_by_id(img_id).name)[0]
+            cv2.putText(img, frame_number, 
+                        (self.camera.width//4, self.camera.height * 31 // 32),
+                        cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
+
+            frame = os.path.basename(name)
+            Image.fromarray(img).save(fmt.format(frame))
+
+        clip = editor.ImageSequenceClip(sequence=out_dir, fps=fps)
+        video_file = os.path.join(out_base, f'{out_name}-fps{fps}.mp4')
+        clip.write_videofile(video_file)
+
+
+class LineCheckerFromModel(LineChecker):
+    """ LineChecker but without reading the model """
+    
+    def __init__(self,
+                 model: ColmapModel,
+                 anno_points: np.ndarray,
+                 frames_root: str = None):
+
+        self.camera = model.camera
+        self.points = model.points
+        self.images = model.images
+
+        self.anno_points = np.asarray(anno_points).reshape(-1, 3)
+        self.line = Line(anno_points)
+        self.frames_root = frames_root if frames_root is not None else ""
+
+        self._pts_status = None  # point status, dict, True if inside
+        self._radius = None

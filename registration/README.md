@@ -12,7 +12,11 @@ What's the efficient way to get Mixed model? Can simply take the union? e.g. P04
 - will hierarchical processing affect accuracy?
 
 # Storage
-Registration is stored as a 4x4 SE(3) element
+Registration is stored as a 3x3 rotation applying to col-vec, 1x3 translation and scalar scale.
+```
+model <- Read "model_path"  # (N, 3)
+aligned_model = model * s * R.T + transl
+```
 
 # Verification Steps
 
