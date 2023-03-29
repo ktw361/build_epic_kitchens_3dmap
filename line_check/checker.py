@@ -94,7 +94,7 @@ class LineChecker:
                        img: np.ndarray, 
                        xys: np.ndarray,
                        *args, **kwargs) -> np.ndarray:
-        """ Show image from path
+        """
         Args:
             img: np.ndarray, (H, W, 3)
             xys: [N, 2] keypoints

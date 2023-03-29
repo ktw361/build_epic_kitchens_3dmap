@@ -113,7 +113,7 @@ Special cases:
 - [EPIC-100 README](https://data.bris.ac.uk/datasets/2g1n6qdydwa9u22shpxqzp0t8m/readme.txt)
 - [Hero7 FOV Info](https://gopro.com/help/articles/question_answer/hero7-field-of-view-fov-information?sf96748270=1)
 - [EPIC-55 README](https://data.bris.ac.uk/datasets/3h91syskeag572hl6tvuovwv4d/readme.txt)
-- [Returning/Chaning Kitchens](https://github.com/epic-kitchens/epic-kitchens-100-annotations/blob/master/Extension_Participants.csv)
+- [Returning/Changing Kitchens](https://github.com/epic-kitchens/epic-kitchens-100-annotations/blob/master/Extension_Participants.csv)
 
 # Interprete IMU data
 

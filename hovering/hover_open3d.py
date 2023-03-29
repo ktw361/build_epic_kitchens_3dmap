@@ -170,6 +170,7 @@ class HoverRunner:
                                 traj: list=None):
         """
         Args:
+            front: list of 3 floats, the front direction of the camera
             traj: transformed
         """
         pcd = self.transformed_pcd
