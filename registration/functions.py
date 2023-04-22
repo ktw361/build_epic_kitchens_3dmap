@@ -1,11 +1,13 @@
 from typing import List, Tuple
-from colmap_converter.colmap_utils import Image as ColmapImage
-from colmap_converter.colmap_utils import Camera as ColmapCamera
-from lib.base_type import ColmapModel
+import json
 import re
 import numpy as np
 from PIL import Image
 import cv2
+
+from colmap_converter.colmap_utils import Image as ColmapImage
+from colmap_converter.colmap_utils import Camera as ColmapCamera
+from lib.base_type import ColmapModel
 
 
 def colmap_image_w2c(img: ColmapImage) -> np.ndarray:
@@ -96,6 +98,61 @@ def compute_reproj_error(colmap_img: ColmapImage,
     diff = gt_pts - proj2d
     w2c_err = (diff ** 2).sum(-1).mean()
     return w2c_err
+
+
+def umeyama_ransac(src, dst, k, t, d, n=3, verbose=False):
+    """ Find best dst = c * src * R.T + t
+
+    Args:
+        src: (N, 3)
+        dst: (N, 3)
+        k: int. max number of iterations
+        t: float. threshold for the data-consistency criterion
+        d: int. number of close data values required to assert that a model fits well to data
+        n: int. number of points needed for the canonical model
+            Ideally 3 points are enough
+
+    Returns:
+        c: float. See umeyama()
+        R: (3, 3). See umeyama()
+        t: (3,). See umeyama()
+        all_errs: (N,). The error of each point using the best model
+    """
+    def pcd_alignment_error(A, B, c, R, t):
+        """ mean point-to-point distance between two point clouds, 
+        after applying the transformation (c, R, t) to A 
+
+        Returns: (N,)
+        """
+        diff = c * A @ R.T + t - B
+        return np.sqrt((diff ** 2).sum(-1))
+
+    best_model = None
+    best_err = np.inf
+    for i in range(k):
+        inds = np.random.choice(src.shape[0], n, replace=False)
+        maybe_model = umeyama(src[inds], dst[inds])
+        err = pcd_alignment_error(src, dst, *maybe_model)
+        confirmed_inds = np.where(err < t)[0]
+        if len(confirmed_inds) >= d:
+            better_model = umeyama(src[confirmed_inds], dst[confirmed_inds])
+            this_err = pcd_alignment_error(src, dst, *better_model).mean()
+            if this_err < best_err:
+                best_model = better_model
+                best_err = this_err
+            if verbose:
+                print(f"RANSAC: {len(confirmed_inds)} points are inliers, "
+                      f"which is more than {d}, so we accept this model")
+        else:
+            if verbose:
+                print(f"RANSAC: {len(confirmed_inds)} points are inliers, "
+                      f"which is less than {d}, so we discard this model,"
+                      f"average error is {err.mean()}")
+    if best_model is None:
+        raise ValueError("No good model found")
+    all_errs = pcd_alignment_error(src, dst, *best_model)
+    c, R, t = best_model
+    return c, R, t, all_errs
         
 
 def umeyama(src, dst):
@@ -149,24 +206,60 @@ def draw_points2d(img, xys, *args, **kwargs):
 
 
 """ Utilities """
-def build_image_dict(colmap_model: ColmapModel, default_vid: str) -> dict:
-    """ This allows to query images by name.
+def get_common_frames(model_a: ColmapModel, 
+                      model_b: ColmapModel,
+                      frames_a: List[str],
+                      frames_b: List[str],
+                      return_pos=True) -> Tuple[np.ndarray, np.ndarray]:
+    """ Get the common frames between two models.
 
     Returns:
-        {
-            key: vid/frame.jpg
-            value: ColmapImage
-        }
+        images_a, image_b
+        if return_pos:
+            images_a, image_b: [N, 3]
+        else:
+            images_a, image_b: list of ColmapImage
     """
-    img_dict = {}
-    for v in colmap_model.images.values():
-        _vid = re.search('P\d{2}_\d{2,3}', v.name)
-        _vid = _vid[0] if _vid else default_vid
-        frame = re.search('frame_\d{10}.jpg', v.name)[0]
-        key = f'{_vid}/{frame}'
-        img_dict[key] = v
-    return img_dict
+    assert len(frames_a) == len(frames_b)
+    common_frames = []
+    images_a, images_b = [], []
+    model_a_dict = {v.name: v for v in model_a.images.values()}
+    model_b_dict = {v.name: v for v in model_b.images.values()}
+    for i, (fa, fb) in enumerate(zip(frames_a, frames_b)):
+        if fa in model_a_dict and fb in model_b_dict:
+            common_frames.append(fa)
+            images_a.append(model_a_dict[fa])
+            images_b.append(model_b_dict[fb])
+    if return_pos:
+        images_a = np.asarray(
+            [colmap_image_loc(v) for v in images_a])
+        images_b = np.asarray(
+            [colmap_image_loc(v) for v in images_b])
+    return common_frames, images_a, images_b
 
+
+def write_registration(filename: str, 
+                       model_vid: str,
+                       s: float, R: np.ndarray, t: np.ndarray):
+    has_vid = False
+    new_model_info = {
+        'model_vid': model_vid,
+        'scale': s,
+        'rot': R.flatten().tolist(),
+        'transl': t.tolist()
+    }
+
+    with open(filename, 'r') as fp:
+        model_infos = json.load(fp)
+    for model_info in model_infos:
+        if model_info['model_vid'] == model_vid:
+            model_info.update(new_model_info)
+            has_vid = True
+            break
+    if not has_vid:
+        model_infos.append(new_model_info)
+    with open(filename, 'w') as fp:
+        json.dump(model_infos, fp, indent=2)
 
 
 """ Legacy """

@@ -1,7 +1,7 @@
 import open3d as o3d
 import numpy as np
 from argparse import ArgumentParser
-from manual_merge.ann_model import AnnotatedModel
+from lib.base_type import ColmapModel
 
 def parse_args():
     parser = ArgumentParser()
@@ -11,7 +11,7 @@ def parse_args():
 if __name__ == "__main__":
     args = parse_args()
 
-    mod = AnnotatedModel(args.model)
+    mod = ColmapModel(args.model)
 
 
     pcd_np = [v.xyz for v in mod.points.values()]

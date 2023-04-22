@@ -4,11 +4,20 @@ import open3d as o3d
 import numpy as np
 from lib.base_type import ColmapModel
 
+
+""" Model will be read from 
+<model_prefix><models_vid><model_suffix>/{cameras.bin, images.bin, points3D.bin}
+
+"""
+
 def parse_args():
     parser = ArgumentParser()
     parser.add_argument('--infile')
+    parser.add_argument('--model_prefix', default='projects/')
+    parser.add_argument('--model_suffix', default='')
     parser.add_argument('--alpha', type=float, default=0.5)
-    parser.add_argument('--line-length', type=float, default=20)
+    parser.add_argument('--select', type=str, default=None)
+    parser.add_argument('--line-length', type=float, default=10)
     return parser.parse_args()
 
 if __name__ == "__main__":
@@ -29,10 +38,14 @@ if __name__ == "__main__":
         black=[0, 0, 0],
     )
     alpha = args.alpha
+
     pcds = []
+    line_sets = []
 
     for model_info, clr in zip(model_infos, colors.values()):
-        model_path = model_info['model_path']
+        if args.select is not None and model_info['model_vid'] != args.select:
+            continue
+        model_path = args.model_prefix + model_info['model_vid'] + args.model_suffix
         model = ColmapModel(model_path)
         rot = np.asarray(model_info['rot']).reshape(3, 3)
         transl = np.asarray(model_info['transl'])
@@ -50,30 +63,24 @@ if __name__ == "__main__":
         pcd.colors = o3d.utility.Vector3dVector(pcd_rgb)
         pcds.append(pcd)
 
-    ##### Read Line #####
-    def read_transformation(d: dict):
-        rot = np.asarray(d['rot']).reshape(3, 3)
-        transl = np.asarray(d['transl'])
-        scale = d['scale']
-        return rot, transl, scale
+        # ##### Read Line #####
+        line = model_info['line']
+        line = np.asarray(line).reshape(-1, 3)
+        line = line * scale @ rot.T + transl
+        vc = (line[0, :] + line[1, :]) / 2
+        line_dir = line[1, :] - line[0, :]
 
-    line = model_infos[0]['line']
-    line = np.asarray(line).reshape(-1, 3)
-    rot, transl, scale = read_transformation(model_infos[0])
-    base_line = line * scale @ rot.T + transl
-    vc = (base_line[0, :] + base_line[1, :]) / 2
-    line_dir = base_line[1, :] - base_line[0, :]
+        line_set = o3d.geometry.LineSet()
+        line_len_half = args.line_length / 2
+        lst = vc + line_len_half * line_dir
+        led = vc - line_len_half * line_dir
+        lines = [lst, led]
+        line_set.points = o3d.utility.Vector3dVector(lines)
+        line_set.lines = o3d.utility.Vector2iVector([[0, 1]])
+        line_sets.append(line_set)
+        ##### Read Line End #####
 
-    line_set = o3d.geometry.LineSet()
-    line_len_half = args.line_length / 2
-    lst = vc + line_len_half * line_dir
-    led = vc - line_len_half * line_dir
-    lines = [lst, led]
-    line_set.points = o3d.utility.Vector3dVector(lines)
-    line_set.lines = o3d.utility.Vector2iVector([[0, 1]])
-    ##### Read Line End #####
-
-    geoms = [line_set] + pcds
+    geoms = line_sets + pcds
 
     o3d.visualization.draw_geometries(geoms)
     # o3d.visualization.draw_geometries_with_editing([pcds])
