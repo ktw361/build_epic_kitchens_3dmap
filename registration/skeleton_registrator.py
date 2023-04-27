@@ -1,5 +1,5 @@
 """Description
-This registrator take two skeletons, the first one as base, and register the second one into the first one. 
+This registrator take two skeletons, the first one as base, and register the second one into the first one.
 Each skeleton is a (camera, image, points) triple, the database.db of the first skeleton will be copied.
 
 Resource required:
@@ -16,7 +16,7 @@ Output structure:
     <kitchen-id>.json
 
 note the database.db and model/ are redundant after <kitchen-id>.json is obtained,
-hence they can be deleted to reduce space usage. 
+hence they can be deleted to reduce space usage.
 Note about EPIC-50 and EPIC-100, so we name kid as P04A (50) or P04B (100)
 Each <kid>.json contains:
 [
@@ -40,7 +40,7 @@ skeleton_registrator.add_new(
 skeleton_registrator.export_transforms()
 
 Script Usage:
-- Step1: 
+- Step1:
     Generate <kitchen-id>.json
     Creating <kitchen-id>/ directory
     Copying to <vid>/{images/, image_list.txt}
@@ -65,13 +65,17 @@ import argparse
 import logging
 import tqdm
 
+from registration.functions import (
+    extract_common_images, umeyama_ransac, write_registration
+)
+
 from colmap_converter.colmap_utils import read_images_binary
 from libzhifan import io
 
 
 class SkeletonRegistrator:
 
-    def __init__(self, 
+    def __init__(self,
                  out_dir: str,
                  verbose=False):
         self.out_dir = out_dir
@@ -133,11 +137,11 @@ class SkeletonRegistrator:
         self.logger.info("Running: " + ' '.join(commands))
         proc = subprocess.run(
             commands,
-            stdout=self.log_fd, 
+            stdout=self.log_fd,
             stderr=self.log_fd,
             check=True, text=True)
         print(proc)
-        
+
         # vocab_tree_matcher
         vocab_tree_path = '/home/skynet/Zhifan/build_kitchens_3dmap/vocab_bins/vocab_tree_flickr100K_words256K.bin'
         commands = [
@@ -153,7 +157,7 @@ class SkeletonRegistrator:
             stderr=self.log_fd,
             check=True, text=True)
         print(proc)
-        
+
         # mapper (what if we use low-accuracy image_registrator + bundle_adjuster?)
         commands = [
             'colmap', 'mapper',
@@ -171,8 +175,7 @@ class SkeletonRegistrator:
         print(proc)
 
 
-
-def generate_infile(first_vid, 
+def generate_infile(first_vid,
                     skeleton_root="/home/skynet/Zhifan/epic_fields_full/skeletons",
                     colmap_out_root="./projects/registration/",
                     settings_save_dir='json_files/registration/input/') -> dict:
@@ -184,10 +187,10 @@ def generate_infile(first_vid,
     else:
         kitchen = first_vid[:3] + 'B'
         pattern = re.compile(first_vid[:4] + '[0-9]{3}_low')
-    
+
     # ktichen=P04A
     out_dir = osp.join(colmap_out_root, kitchen)
-    export_path = osp.join(out_dir, kitchen, f'{kitchen}.json')
+    export_path = osp.join(out_dir, f'{kitchen}.json')
     num_reg_images = 100
     ransac = dict(
         max_iterations=100,
@@ -202,7 +205,7 @@ def generate_infile(first_vid,
         vid=first_vid,
         model=model_format % first_vid,
         database=database_path)
-    
+
     skeletons = sorted(
         [osp.join(v, 'sparse/0')
          for v in glob.glob(osp.join(skeleton_root, '*'))
@@ -216,14 +219,14 @@ def generate_infile(first_vid,
         first=first,
         skeletons=skeletons)
     io.write_json(
-        settings, 
+        settings,
         osp.join(settings_save_dir, f'{kitchen}_in.json'), indent=2)
     return settings
 
 
 def prepare_input(settings):
 
-    def prepare_images(out_dir: str, 
+    def prepare_images(out_dir: str,
                        model_path: str,
                        model_vid: str,
                        num_reg_images: int,
@@ -314,7 +317,35 @@ def main(args):
                 num_reg_images=num_reg_images)
 
     elif step == 3:
-        raise NotImplementedError
+        settings = io.read_json(args.infile)
+
+        out_dir = settings["out_dir"]
+        first_vid = settings["first"]["vid"]
+        export_path = settings["export_path"]
+        ransac_params  = settings["ransac"]
+        max_iterations = ransac_params["max_iterations"]
+        error_thresh = ransac_params["error_thresh"]
+        min_inliers = ransac_params["min_inliers"]
+        model_dof = 3
+
+        write_registration(
+            export_path, model_vid=first_vid, s=1.0, R=np.eye(3), t=np.ones(3))
+
+        for skeleton_model_path in settings["skeletons"]:
+            vid = re.search('P\d{2}_\d{2,3}', skeleton_model_path)[0]
+            _, imgs_dst, imgs_src = extract_common_images(
+                out_dir=out_dir, model_path=skeleton_model_path, model_vid=vid)
+            if imgs_src.shape[0] < model_dof:
+                print(f"Skipping {vid} due to insufficient images {imgs_src.shape[0]}")
+                continue
+            s, R, t, all_errs = umeyama_ransac(
+                imgs_src, imgs_dst,
+                k=max_iterations, t=error_thresh, d=min_inliers,
+                n=model_dof)
+            if s is None:
+                print(f"Skipping {vid} due to No Good Models")
+                continue
+            write_registration(export_path, model_vid=vid, s=s, R=R, t=t)
 
     else:
         raise ValueError()

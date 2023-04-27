@@ -3,18 +3,17 @@ import os.path as osp
 from argparse import ArgumentParser
 import numpy as np
 
-from lib.base_type import ColmapModel
-from line_check.checker import MultiLineChecker
+from line_check.lite_checker import JsonMultiLineChecker
+from libzhifan import io
 
 
 def parse_args():
     parser = ArgumentParser()
     parser.add_argument('--infile', type=str)
-    parser.add_argument('--radius', type=float, default=0.2)
-    parser.add_argument('--model_prefix', default='projects/')
-    parser.add_argument('--model_suffix', default='')
+    parser.add_argument('--model_prefix', default='projects/json_models/')
+    parser.add_argument('--model_suffix', default='_skeletons.json')
     parser.add_argument(
-        '--epic_rgb_root', type=str, required=True,
+        '--epic_rgb_root', type=str, default='/media/skynet/DATA/Datasets/epic-100/rgb',
         help="directory structured as e.g. <root>/P01/P01_101/frame_%010d.jpg")
     parser.add_argument('--fps', type=int, default=10)
     return parser.parse_args()
@@ -42,7 +41,6 @@ def inverse_transform_line(rot, transl, scale, line) -> np.ndarray:
 
 
 def main(args):
-    radius = args.radius
     epic_rgb_root = args.epic_rgb_root
     fname_nosuffix = osp.basename(args.infile).split('.')[0]
     out_base = f'outputs/cross_line_check/{fname_nosuffix}'
@@ -52,38 +50,38 @@ def main(args):
         model_infos = json.load(fp)
 
     # Get line drawn in common reference coordinate
-    COMMOND_INDEX = 0
-    line = np.asarray(model_infos[COMMOND_INDEX]['line']).reshape(-1, 3)
-    rot, transl, scale = read_transformation(model_infos[COMMOND_INDEX])
-    common_line = line * scale @ rot.T + transl
+    COMMON = 0
+    first_vid = model_infos[COMMON]['model_vid']
+    first_model = io.read_json(model_format % first_vid)
+    line = np.asarray(first_model['line']).reshape(-1, 3)
+    rot, transl, scale = read_transformation(model_infos[COMMON])
+    common_line = line * scale @ rot.T + transl  # In fact identi
 
     for ind, model_info in enumerate(model_infos):
         vid = model_info['model_vid']
         model_path = model_format % vid
-
         frames_root = osp.join(epic_rgb_root, vid[:3], vid)
-
-        model = ColmapModel(model_path)
-        rot, transl, scale = read_transformation(model_info)
+        model = io.read_json(model_path)
 
         # Take the common_line in common coordinate, and transform it to single model
+        rot, transl, scale = read_transformation(model_info)
         common_line_transformed = inverse_transform_line(rot, transl, scale, common_line)
         lines_list = [common_line_transformed]
         line_colors = ['blue']
 
-        if 'line' in model_info:
-            line = np.asarray(model_info['line']).reshape(-1, 3)
+        if 'line' in model:
+            line = np.asarray(model['line']).reshape(-1, 3)
             lines_list.insert(0, line)
             line_colors.insert(0, 'yellow')
 
-        checker = MultiLineChecker(
-            model,
+        checker = JsonMultiLineChecker(
+            model['cameras'][0], model['images'],
             anno_points_list=lines_list,
             line_colors=line_colors,
             frames_root=frames_root)
         print(f"Writing model: {vid}")
         checker.write_mp4(
-            radius=radius, out_name=vid, fps=args.fps, out_base=out_base)
+            radius=None, out_name=vid, fps=args.fps, out_base=out_base)
 
 
 if __name__ == '__main__':
