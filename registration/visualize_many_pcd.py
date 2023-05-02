@@ -2,6 +2,9 @@ from argparse import ArgumentParser
 import json
 import open3d as o3d
 import numpy as np
+
+import matplotlib.pyplot as plt
+
 from lib.base_type import ColmapModel
 
 
@@ -9,6 +12,18 @@ from lib.base_type import ColmapModel
 <model_prefix><models_vid><model_suffix>/{cameras.bin, images.bin, points3D.bin}
 
 """
+
+def generate_colormap(num_colors):
+    colormap = plt.get_cmap("hsv", num_colors)
+    color_dict = {}
+    inds = np.arange(num_colors)
+    np.random.seed(42)
+    inds = np.random.permutation(inds)
+    for i in range(num_colors):
+        color_name = f"color_{i}"
+        color_dict[color_name] = colormap(inds[i])[:3]
+    return color_dict
+
 
 def parse_args():
     parser = ArgumentParser()
@@ -27,16 +42,17 @@ if __name__ == "__main__":
     with open(infile, 'r') as fp:
         model_infos = json.load(fp)
     
-    colors = dict(
-        red=[1, 0, 0],
-        green=[0, 1, 0],
-        blue=[0, 0, 1],
-        yellow=[1, 1, 0],
-        purple=[1, 0, 1],
-        cyan=[0, 1, 1],
-        white=[1, 1, 1],
-        black=[0, 0, 0],
-    )
+    colors = generate_colormap(32)
+    # colors = dict(
+    #     red=[1, 0, 0],
+    #     green=[0, 1, 0],
+    #     blue=[0, 0, 1],
+    #     yellow=[1, 1, 0],
+    #     purple=[1, 0, 1],
+    #     cyan=[0, 1, 1],
+    #     white=[1, 1, 1],
+    #     black=[0, 0, 0],
+    # )
     alpha = args.alpha
 
     pcds = []
@@ -63,22 +79,22 @@ if __name__ == "__main__":
         pcd.colors = o3d.utility.Vector3dVector(pcd_rgb)
         pcds.append(pcd)
 
-        # ##### Read Line #####
-        line = model_info['line']
-        line = np.asarray(line).reshape(-1, 3)
-        line = line * scale @ rot.T + transl
-        vc = (line[0, :] + line[1, :]) / 2
-        line_dir = line[1, :] - line[0, :]
+        if 'line' in model_info:
+            line = model_info['line']
+            line = np.asarray(line).reshape(-1, 3)
+            line = line * scale @ rot.T + transl
+            vc = (line[0, :] + line[1, :]) / 2
+            line_dir = line[1, :] - line[0, :]
 
-        line_set = o3d.geometry.LineSet()
-        line_len_half = args.line_length / 2
-        lst = vc + line_len_half * line_dir
-        led = vc - line_len_half * line_dir
-        lines = [lst, led]
-        line_set.points = o3d.utility.Vector3dVector(lines)
-        line_set.lines = o3d.utility.Vector2iVector([[0, 1]])
-        line_sets.append(line_set)
-        ##### Read Line End #####
+            line_set = o3d.geometry.LineSet()
+            line_len_half = args.line_length / 2
+            lst = vc + line_len_half * line_dir
+            led = vc - line_len_half * line_dir
+            lines = [lst, led]
+            line_set.points = o3d.utility.Vector3dVector(lines)
+            line_set.lines = o3d.utility.Vector2iVector([[0, 1]])
+            line_set.colors = o3d.utility.Vector3dVector([np.asarray(clr)])
+            line_sets.append(line_set)
 
     geoms = line_sets + pcds
 

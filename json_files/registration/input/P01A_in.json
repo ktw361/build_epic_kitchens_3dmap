@@ -1,0 +1,33 @@
+{
+  "out_dir": "./projects/registration/P01A",
+  "num_reg_images": 50,
+  "ransac": {
+    "max_iterations": 100,
+    "error_thresh": 0.5,
+    "min_inliers": 30
+  },
+  "export_path": "./json_files/registration/P01A.json",
+  "first": {
+    "vid": "P01_01",
+    "model": "/home/skynet/Zhifan/epic_fields_full/skeletons/P01_01_low/sparse/0",
+    "database": "/home/skynet/Zhifan/epic_fields_full/skeletons/P01_01_low/P01_01_database.db"
+  },
+  "skeletons": [
+    "/home/skynet/Zhifan/epic_fields_full/skeletons/P01_02_low/sparse/0",
+    "/home/skynet/Zhifan/epic_fields_full/skeletons/P01_03_low/sparse/0",
+    "/home/skynet/Zhifan/epic_fields_full/skeletons/P01_04_low/sparse/0",
+    "/home/skynet/Zhifan/epic_fields_full/skeletons/P01_06_low/sparse/0",
+    "/home/skynet/Zhifan/epic_fields_full/skeletons/P01_07_low/sparse/0",
+    "/home/skynet/Zhifan/epic_fields_full/skeletons/P01_08_low/sparse/0",
+    "/home/skynet/Zhifan/epic_fields_full/skeletons/P01_09_low/sparse/0",
+    "/home/skynet/Zhifan/epic_fields_full/skeletons/P01_10_low/sparse/0",
+    "/home/skynet/Zhifan/epic_fields_full/skeletons/P01_11_low/sparse/0",
+    "/home/skynet/Zhifan/epic_fields_full/skeletons/P01_13_low/sparse/0",
+    "/home/skynet/Zhifan/epic_fields_full/skeletons/P01_14_low/sparse/0",
+    "/home/skynet/Zhifan/epic_fields_full/skeletons/P01_15_low/sparse/0",
+    "/home/skynet/Zhifan/epic_fields_full/skeletons/P01_16_low/sparse/0",
+    "/home/skynet/Zhifan/epic_fields_full/skeletons/P01_17_low/sparse/0",
+    "/home/skynet/Zhifan/epic_fields_full/skeletons/P01_18_low/sparse/0",
+    "/home/skynet/Zhifan/epic_fields_full/skeletons/P01_19_low/sparse/0"
+  ]
+}

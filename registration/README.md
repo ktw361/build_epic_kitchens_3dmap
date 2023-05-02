@@ -12,7 +12,7 @@ Registration is stored as a 3x3 rotation applying to col-vec, 1x3 translation an
 `aligned_model = model * s * R.T + transl`
 
 e.g.
-```json
+```projects/registration/P04A/P04A.json
 [
     {
         "model_vid": "P04_01",
@@ -26,7 +26,8 @@ e.g.
     }
 ]
 ```
-optionally, each model_vid has a "line" field which is a 2x3 matrix of the line drawn on the model.
+
+"line" field is stored in `projects/json_models/P04_01_skeletons.json`
 
 Accessing {cameras.bin, images.bin, points.bin} can be done by `<model_prefix> + <model_vid> + <model_suffix>`;
 Accessing image frames can be done by `<rgb_frames_root>/<model_vid[:3]>/<model_vid>/frames_%010d.jpg>`
@@ -47,3 +48,6 @@ python registration/skeleton_registrator.py --infile json_files/registration/inp
 1. Visualise Pcd (Coarse) [DONE]
 2. Visualise Line Projection [DONE]
     - Project line drawn on model_A to images of model_B
+
+# Verification Steps (Web)
+1. `python tools/extract_primitives.py --model_dir ~/epic_fields_full/skeletons/P04_02_low/sparse/0 --out_file projects/json_models/P04_02_skeletons.json`
