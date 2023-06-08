@@ -13,6 +13,42 @@ from registration.point_registrate import build_c2w_map
 from registration.functions import colmap_image_c2w
 
 
+""" Trajectory """
+def get_pretty_trajectory(pos_history,
+                   num_line=6,
+                   line_radius=0.15,
+                   darkness=1.0,
+                   ) -> o3d.geometry.TriangleMesh:
+    """ pos_history: absolute position history
+    """
+    raise DeprecationWarning("Use helper.get_pretty_trajectory instead")
+    def generate_jet_colors(n, darkness=0.6):
+        cmap = plt.get_cmap('jet')
+        norm = plt.Normalize(vmin=0, vmax=n-1)
+        colors = cmap(norm(np.arange(n)))
+
+        # Convert RGBA to RGB
+        colors_rgb = []
+        for color in colors:
+            colors_rgb.append(color[:3] * darkness)
+
+        return colors_rgb
+
+    pos_history = np.asarray(pos_history)[-num_line:]
+    colors = generate_jet_colors(len(pos_history), darkness)
+    # colors = [1, 0, 0]
+    # colors = colors[-len(pos_history):]
+    line_mesh = LineMesh(
+        points=pos_history, 
+        colors=colors, radius=line_radius)
+    # line_mesh.merge_cylinder_segments()
+    # path = line_mesh.cylinder_segments[0]
+    # return path
+    return line_mesh.cylinder_segments
+
+
+""" 3D actions """
+
 def generate_colormap(num_colors):
     colormap = plt.get_cmap("hsv", num_colors)
     color_dict = {}

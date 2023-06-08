@@ -14,6 +14,7 @@ from libzhifan import io
 
 
 def colmap_image_w2c(img: ColmapImage) -> np.ndarray:
+    raise DeprecationWarning('use lib.common_functions.colmap_image_w2c instead')
     """
     Returns: w2c (4, 4)
     """
@@ -23,7 +24,19 @@ def colmap_image_w2c(img: ColmapImage) -> np.ndarray:
     return w2c
 
 
+def colmap_image_c2w(img: ColmapImage) -> np.ndarray:
+    raise DeprecationWarning('use lib.common_functions.colmap_image_c2w instead')
+    """ equiv: np.linalg.inv(colmap_image_w2c(img)) 
+    Returns: c2w (4, 4)
+    """
+    c2w = np.eye(4)
+    c2w[:3, :3] = img.qvec2rotmat().T
+    c2w[:3, 3] = -img.qvec2rotmat().T @ img.tvec
+    return c2w
+
+
 def colmap_image_loc(img: ColmapImage) -> np.ndarray:
+    raise DeprecationWarning('use lib.common_functions.colmap_image_loc instead')
     """
     Returns: camera location (3,) of this image, in world coordinate
     """
@@ -34,7 +47,8 @@ def colmap_image_loc(img: ColmapImage) -> np.ndarray:
 
 def project_points(pts3d: np.ndarray,
                    w2c: np.ndarray,
-                   camera: ColmapCamera):
+                   camera: ColmapCamera,
+                   debug=False):
     """ Project 3d points into the image plane, using world-to-camera matrix `w2c`,
     and camera parameters `camera`.
 
@@ -50,6 +64,8 @@ def project_points(pts3d: np.ndarray,
     pts3d_homo = np.hstack((pts3d, np.ones((pts3d.shape[0], 1))))
     pts3d_cam = (w2c @ pts3d_homo.T).T
     pts3d_cam = pts3d_cam[:, :3]
+    if debug:
+        print(pts3d_cam[:10, :])
     camera_matrix = np.float32([
         [fx, 0, cx],
         [0, fy, cy],
@@ -65,7 +81,8 @@ def compute_reproj_error(colmap_img: ColmapImage,
                          w2c: np.ndarray,
                          global_points3d: dict,
                          camera: ColmapCamera,
-                         visual_debug=False) -> float:
+                         visual_debug=False,
+                         visual_debug_vid=None) -> float:
     """
     Each colmap_img has pts2d and pts3d,
     we can compute the reprojection error of `w2c` by
@@ -90,12 +107,18 @@ def compute_reproj_error(colmap_img: ColmapImage,
     gt_pts = np.asarray(gt_pts)
     proj2d = project_points(pts3d, w2c, camera)
     if visual_debug:
-        pid = 'P04'
-        vid = 'P04_109'
-        image_path = f'/home/skynet/Zhifan/data/epic_rgb_frames/{pid}/{vid}/{colmap_img.name}'
-        image = np.asarray(Image.open(image_path))
-        img = draw_points2d(image, gt_pts, radius=1, color=(255,0,0),lineType=-1, thickness=2)
-        img = draw_points2d(img, proj2d, radius=1, color=(0, 255, 0), lineType=-1, thickness=2)
+        if visual_debug_vid is None:
+            vid = re.search('P\d{2}_\d{2,3}', colmap_img.name)[0]
+        else:
+            vid = visual_debug_vid
+        pid = vid[:3]
+        frame_path = re.search('frame_\d{10}.jpg', colmap_img.name)[0]
+        image_path = f'/home/skynet/Zhifan/data/epic_rgb_frames/{pid}/{vid}/{frame_path}'
+        img = np.asarray(Image.open(image_path))
+        print('3d proj:', proj2d[:10, :])
+        print('2d gt:', gt_pts[:10, :])
+        img = draw_points2d(img, proj2d, radius=1, color=(255, 0, 0), lineType=-1, thickness=2)
+        img = draw_points2d(img, gt_pts, radius=1, color=(0,255,0),lineType=-1, thickness=2)
         return img
 
     diff = gt_pts - proj2d
@@ -103,7 +126,7 @@ def compute_reproj_error(colmap_img: ColmapImage,
     return w2c_err
 
 
-def umeyama_ransac(src, dst, k, t, d, n=3, verbose=False):
+def umeyama_ransac(src, dst, k, t, d: float, n=3, verbose=False):
     """ Find best dst = c * src * R.T + t
 
     Args:
@@ -111,7 +134,7 @@ def umeyama_ransac(src, dst, k, t, d, n=3, verbose=False):
         dst: (N, 3)
         k: int. max number of iterations
         t: float. threshold for the data-consistency criterion
-        d: int. number of close data values required to assert that a model fits well to data
+        d: float. ratio of close data values required to assert that a model fits well to data
         n: int. number of points needed for the canonical model
             Ideally 3 points are enough
 
@@ -121,6 +144,7 @@ def umeyama_ransac(src, dst, k, t, d, n=3, verbose=False):
         t: (3,). See umeyama()
         all_errs: (N,). The error of each point using the best model
     """
+    d = int(d * len(src))
     def pcd_alignment_error(A, B, c, R, t):
         """ mean point-to-point distance between two point clouds, 
         after applying the transformation (c, R, t) to A 
