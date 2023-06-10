@@ -59,7 +59,7 @@ def build_c2w_map_str(model: ColmapModel, pose_only=False):
 def build_c2w_map_int(model, pose_only=False):
     """ This is for single video only
 
-    key: frame number in int
+    key: frame number in int-type
     value: (4, 4) ndarray, or ColmapImage
     """
     mp = dict()

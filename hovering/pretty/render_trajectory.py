@@ -11,9 +11,8 @@ from open3d.visualization import rendering
 from lib.base_type import ColmapModel
 from hovering.helper import (
     get_o3d_pcd, Helper, get_frustum,get_frustum_fixed,get_frustum_green, read_original,
-    get_cam_pos, get_trajectory
+    get_cam_pos, get_trajectory, get_pretty_trajectory,
 )
-from hovering.pretty.utils import get_pretty_trajectory
 from colmap_converter.colmap_utils import (
     BaseImage, Point3D, Camera, Image
 )
