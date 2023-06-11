@@ -1,7 +1,6 @@
 import numpy as np
 import torch
 from pytorch3d.transforms import quaternion_to_matrix
-from pytorch3d.transforms import quaternion_to_matrix
 
 from line_check.line import Line
 
