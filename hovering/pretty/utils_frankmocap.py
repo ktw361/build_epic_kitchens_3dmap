@@ -22,8 +22,11 @@ from libzhifan.geometry import SimpleMesh, visualize_mesh, projection, CameraMan
 
 
 def get_cam_manager(colmap_camera):
-    fx, fy, cx, cy, _, _, _, _ = colmap_camera.params
-    img_w, img_h = colmap_camera.width, colmap_camera.height
+    # fx, fy, cx, cy, _, _, _, _ = colmap_camera.params
+    # img_w, img_h = colmap_camera.width, colmap_camera.height
+    # return CameraManager(fx, fy, cx, fy, img_h, img_w, in_ndc=False)
+    fx, fy, cx, cy, _, _, _, _ = colmap_camera['params']
+    img_w, img_h = colmap_camera['width'], colmap_camera['height']
     return CameraManager(fx, fy, cx, fy, img_h, img_w, in_ndc=False)
 
 
@@ -137,7 +140,7 @@ class HandGetter:
             left=dict(vscale=1, tscale=1, trans=torch.tensor([0, 0, 0], device='cuda', dtype=torch.float32)),
             right=dict(vscale=1, tscale=1, trans=torch.tensor([0, 0, 0], device='cuda', dtype=torch.float32))
         )
-        # magics = nomagics
+        magics = nomagics
         verts_hand_og = verts_hand_og * scale_hand * magics[side]['vscale']
         verts_hand_cam = verts_hand_og @  hand_rot_mat.permute(0, 2, 1) \
             + hand_translation * scale_hand * magics[side]['tscale'] \

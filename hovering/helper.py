@@ -24,8 +24,7 @@ class Helper:
         'purple': [0.2, 0.2, 0.8, 1]
     }
 
-    def __init__(self, 
-                 point_size):
+    def __init__(self, point_size):
         self.point_size = point_size
     
     def material(self, color: str, shader="defaultUnlit") -> rendering.MaterialRecord:
@@ -167,3 +166,39 @@ def read_original(colmap_img: BaseImage, frame_root: str) -> np.ndarray:
     """
     return np.asarray(Image.open(os.path.join(frame_root, colmap_img.name)))
 
+
+""" Obtain Viewpoint from Open3D GUI """
+def parse_o3d_gui_view_status(status: dict, render: rendering.OffscreenRenderer):
+    """ Parse open3d GUI's view status and convert to OffscreenRenderer format.
+    This will do the normalisation of front and compute eye vector (updated version of front)
+
+    
+    Args:
+        status: Ctrl-C output from Open3D GUI
+        render: OffscreenRenderer
+    Output:
+       params for render.setup_camera(fov, lookat, eye, up) 
+    """
+    cam_info = status['trajectory'][0]
+    fov = cam_info['field_of_view']
+    lookat = np.asarray(cam_info['lookat'])
+    front = np.asarray(cam_info['front'])
+    front = front / np.linalg.norm(front)
+    up = np.asarray(cam_info['up'])
+    zoom = cam_info['zoom']
+    """ 
+    See Open3D/cpp/open3d/visualization/visualizer/ViewControl.cpp#L243: 
+        void ViewControl::SetProjectionParameters()
+    """
+    right = np.cross(up, front) / np.linalg.norm(np.cross(up, front))
+    view_ratio = zoom * render.scene.bounding_box.get_max_extent()
+    distance = view_ratio / np.tan(fov * 0.5 / 180.0 * np.pi)
+    eye = lookat + front * distance
+    return fov, lookat, eye, up
+
+
+def set_offscreen_as_gui(render: rendering.OffscreenRenderer, status: dict):
+    """ Set offscreen renderer as GUI's view status
+    """
+    fov, lookat, eye, up = parse_o3d_gui_view_status(status, render)
+    render.setup_camera(fov, lookat, eye, up)

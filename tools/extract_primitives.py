@@ -26,9 +26,10 @@ def pythonify(obj):
 
 def extract_primitives(model_dir: str) -> dict:
     """
+    images will be sorted by name
     Returns:
         {
-            'cameras': [xxx],
+            'cameras': {xxx},
             'images': [
                 [qw, qx, qy, qz, tx, ty, tz, name]  # w2c
             ],
@@ -42,18 +43,20 @@ def extract_primitives(model_dir: str) -> dict:
     cameras, images, points = read_model(model_dir, ext='.bin')
     cameras = pythonify([v._asdict() for v in cameras.values()])
     assert len(cameras) == 1
+    camera = cameras[0]
 
     print("Parsing images...")
     image_list = []
     for img in tqdm.tqdm(images.values()):
         image_list.append(img.qvec.tolist() + img.tvec.tolist() + [img.name])
+    image_list = sorted(image_list, key=lambda x: x[-1])
     print("Parsing points...")
     point_list = []
     for pt in tqdm.tqdm(points.values()):
         point_list.append(pt.xyz.tolist() + pt.rgb.tolist())
 
     ret = dict(
-        cameras=cameras,
+        camera=camera,
         images=image_list,
         points=point_list)
     return ret
