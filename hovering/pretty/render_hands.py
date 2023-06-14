@@ -330,7 +330,6 @@ class HandHoverRunner:
 
 
 class RunP28_101(HandHoverRunner):
-    #model_path = '/home/skynet/Zhifan/build_kitchens_3dmap/projects/ahmad/P02_109/enhanced_model/'
     model_path = '/home/skynet/Ahmad/Zhifan_visualizer/build_epic_kitchens_3dmap/colmap_models_registered/P28_101_low/'
     pcd_model_path = '/home/barry/Ahmad/colmap_epic_fields/colmap_models_cloud/P28_101/dense'
     frames_root = '/media/skynet/DATA/Datasets/epic-100/rgb/P28/P28_101'

@@ -29,7 +29,7 @@ def main(args):
     model = io.read_json(args.infile)
     line = np.asarray(model['line']).reshape(-1, 3)
     checker = JsonMultiLineChecker(
-        model['cameras'][0], model['images'],
+        model['camera'], model['images'],
         anno_points_list=[line],
         line_colors=['yellow'],
         frames_root=frames_root)
