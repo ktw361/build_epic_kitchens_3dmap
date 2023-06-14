@@ -6,6 +6,7 @@ import numpy as np
 from PIL import Image
 from tqdm import tqdm
 import open3d as o3d
+from lib.base_type import JsonColmapModel
 try:
     import ujson as json
 except ImportError:
@@ -30,31 +31,6 @@ FRUSTUM_SIZE = 0.6
 FRUSTUM_LINE_RADIUS = 0.02
 
 TRAJECTORY_LINE_RADIUS = 0.02
-
-
-class JsonColmapModel:
-    def __init__(self, json_path):
-        self.json_path = json_path
-        with open(json_path) as f:
-            model = json.load(f)
-        self.camera = model['camera']
-        self.points = model['points']
-        self.images = sorted(model['images'], key=lambda x: x[-1])  # qw, qx, qy, qz, tx, ty, tz, frame_name
-    
-    @property
-    def ordered_image_ids(self):
-        return list(range(len(self.images)))
-    
-    @property
-    def ordered_images(self) -> List[ColmapImage]:
-        return [self.get_image_by_id(i) for i in self.ordered_image_ids]
-    
-    def get_image_by_id(self, image_id: int) -> ColmapImage:
-        img_info = self.images[image_id]
-        cimg = ColmapImage(
-            id=image_id, qvec=img_info[:4], tvec=img_info[4:7], camera_id=0, 
-            name=img_info[7], xys=[], point3D_ids=[])
-        return cimg
 
 
 def get_interpolation(point1=np.array([1, 2, 3]),point2=np.array([5, 7, 10]),N=10):
@@ -163,7 +139,9 @@ class HoverRunner:
                           psize,
                           img_id: int =None,
                           clear_geometry: bool =True,
-                          lay_image: bool =True):
+                          lay_image: bool =True,
+                          sun_light: bool =False,
+                          show_first_frustum: bool =True):
         """
         Args:
             psize: point size,
@@ -196,12 +174,14 @@ class HoverRunner:
             colmap_image=test_img, 
             camera_height=EPIC_HEIGHT, camera_width=EPIC_WIDTH)
         frustum = self.scene_transform(frustum)
-        self.render.scene.add_geometry('frustum', frustum, red)
+        if show_first_frustum:
+            self.render.scene.add_geometry('first_frustum', frustum, red)
         self.render.scene.set_background(self.background_color)
 
-        # render.scene.scene.set_sun_light([0.707, 0.0, -.707], [1.0, 1.0, 1.0],
-        #                                  75000)
-        # render.scene.scene.enable_sun_light(True)
+        if sun_light:
+            self.render.scene.scene.set_sun_light([0.707, 0.0, -.707], [1.0, 1.0, 1.0],
+                                            75000)
+            self.render.scene.scene.enable_sun_light(True)
         self.render.scene.show_axes(False)
 
         img_buf = self.render.render_to_image()

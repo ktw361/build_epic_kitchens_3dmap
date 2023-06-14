@@ -28,3 +28,5 @@ colmap stereo_fusion   \
    --input_type geometric   \
    --output_type BIN \
    --output_path ${dense_cloud_root}/${VIDEO} \
+
+# colmap model_converter --input_path dense/ --output_path /tmp/P22_115.ply --output_type PLY

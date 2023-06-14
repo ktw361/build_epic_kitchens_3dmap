@@ -44,7 +44,7 @@ def compute_video_max_change(model: ColmapModel, from_mean=True, verbose=False,
         roll = np.arctan2(2.0*(q.x*q.y + q.w*q.z), q.w*q.w + q.x*q.x - q.y*q.y - q.z*q.z)
         return map(lambda x : x / np.pi * 180, (yaw, pitch, roll))
     
-    time_fwd = build_c2w_map(model)
+    time_fwd = build_c2w_map_int(model)
     frames = list(time_fwd.keys())
 
     if num_samples is None:
@@ -87,7 +87,7 @@ def compute_video_max_change(model: ColmapModel, from_mean=True, verbose=False,
     else:
         return infos
     
-def to_cir_hist(angs, bins=36, log_scale=False):
+def to_cir_hist(angs, bins=36, log_scale=False, title=None):
     import matplotlib.pyplot as plt
     angs = np.asarray([v  if v > 0 else 360 + v for v in angs])
     cnt, theta = np.histogram(angs, range=(0, 360), bins=bins)
@@ -109,6 +109,10 @@ def to_cir_hist(angs, bins=36, log_scale=False):
     ax.set_xticklabels(map(lambda x : str(x) + '°', [0, 45, 90, 135, 180, -135, -90, -45]))
     # ax.set_xticklabels([str(label) +  for label in ax.get_xticks()])
     ax.set_yticklabels([])
+
+    if title is None:
+        font_dict = {'size': 16}
+        ax.set_title(title, y=-0.20, fontdict=font_dict)
     return ax
 
 
