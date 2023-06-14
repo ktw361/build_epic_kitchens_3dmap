@@ -1,4 +1,5 @@
 from typing import List
+import json
 from functools import cached_property
 from colmap_converter import colmap_utils
 
@@ -53,3 +54,29 @@ class ColmapModel:
 
     def get_image_by_id(self, image_id: int):
         return self.images[image_id]
+
+
+class JsonColmapModel:
+    def __init__(self, json_path):
+        self.json_path = json_path
+        with open(json_path) as f:
+            model = json.load(f)
+        self.camera = model['camera']
+        self.points = model['points']
+        self.images = sorted(model['images'], key=lambda x: x[-1])  # qw, qx, qy, qz, tx, ty, tz, frame_name
+    
+    @property
+    def ordered_image_ids(self):
+        return list(range(len(self.images)))
+    
+    @property
+    def ordered_images(self) -> List[colmap_utils.Image]:
+        return [self.get_image_by_id(i) for i in self.ordered_image_ids]
+    
+    def get_image_by_id(self, image_id: int) -> colmap_utils.Image:
+        img_info = self.images[image_id]
+        cimg = colmap_utils.Image(
+            id=image_id, qvec=img_info[:4], tvec=img_info[4:7], camera_id=0, 
+            name=img_info[7], xys=[], point3D_ids=[])
+        return cimg
+

@@ -3,7 +3,6 @@ import os
 import re
 import numpy as np
 from PIL import Image as PIL_Image
-import open3d as o3d
 import copy
 
 from hovering.helper import (
@@ -59,11 +58,17 @@ class HandHoverRunner(HoverRunner):
         geometry = self.scene_transform(copy.deepcopy(geometry))
         self.render.scene.add_geometry(name, geometry, material)
     
+    def add_geometry_with_material(self, name, geometry, material):
+        if self.render.scene.has_geometry(name):
+            self.render.scene.remove_geometry(name)
+        geometry = self.scene_transform(copy.deepcopy(geometry))
+        self.render.scene.add_geometry(name, geometry, material)
+    
 
 class RunP28_101(HandHoverRunner):
     model_path = '/media/skynet/DATA/Zhifan/colmap_projects/epic_fields_data/P28_101.json'
     pcd_model_path = '/home/barry/Ahmad/colmap_epic_fields/colmap_models_cloud/P28_101/dense.ply'
-    view_path = './json_files/hover_viewpoints/P28_101_hand1.json'
+    view_path = './json_files/hover_viewpoints/P28_101_hand2.json'
 
     vid = re.search('P\d{2}_\d{2,3}', model_path)[0]
     kid = vid[:3]

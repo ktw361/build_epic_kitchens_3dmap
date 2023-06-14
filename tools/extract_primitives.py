@@ -30,9 +30,10 @@ def extract_primitives(model_dir: str) -> dict:
     Returns:
         {
             'cameras': {xxx},
-            'images': [
-                [qw, qx, qy, qz, tx, ty, tz, name]  # w2c
-            ],
+            'images': {
+                'frame_<10d>.jpg': [qw, qx, qy, qz, tx, ty, tz]  # w2c
+                ...
+            },
             'points': [
                 [x, y, z, r, g, b]  # rgb in 0-255
             ]

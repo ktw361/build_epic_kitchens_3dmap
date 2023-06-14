@@ -1,6 +1,6 @@
 from collections import namedtuple
 from functools import cached_property
-from typing import List
+from typing import List, Union
 import tqdm
 import json, os, re, shutil
 import os.path as osp
@@ -8,7 +8,7 @@ import numpy as np
 import cv2
 from PIL import Image
 from moviepy import editor
-from lib.base_type import ColmapModel
+from lib.base_type import ColmapModel, JsonColmapModel
 
 from line_check.line import Line
 from line_check.functions import project_line_image
@@ -27,13 +27,24 @@ class MultiLineChecker:
     )
     
     def __init__(self,
-                 model: ColmapModel,
+                 model: Union[ColmapModel, JsonColmapModel],
                  anno_points_list: List[np.ndarray],
                  line_colors: List[str],
                  frames_root: str = None):
 
-        self.camera = model.camera
-        self.images = model.images
+        if isinstance(model, ColmapModel):
+            self.camera = model.camera
+            self.images = model.images
+        elif isinstance(model, JsonColmapModel):
+            camera = model.camera
+            images = model.images
+            CustomCamera = namedtuple('CustomCamera', ['width', 'height', 'params'])
+            CustomImage = namedtuple('CustomImage', ['qvec', 'tvec', 'name'])
+
+            self.camera = CustomCamera(camera['width'], camera['height'], camera['params'])
+            self.images = {
+                i: CustomImage(np.asarray(image[:4]), np.asarray(image[4:7]), image[7])
+                for i, image in enumerate(images)}
 
         self.lines = []
         for anno_points in anno_points_list:

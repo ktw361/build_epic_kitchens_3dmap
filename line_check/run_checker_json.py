@@ -10,6 +10,7 @@ from libzhifan import io
 def parse_args():
     parser = ArgumentParser()
     parser.add_argument('--infile', type=str)
+    parser.add_argument('--line-json', type=str)
     parser.add_argument('--out-name', type=str, help='example: P01_01-homo', required=True)
     parser.add_argument('--epic_rgb_root', type=str, 
                         default='/media/skynet/DATA/Datasets/epic-100/rgb')
@@ -27,9 +28,10 @@ def main(args):
     os.makedirs(out_dir, exist_ok=True)
 
     model = io.read_json(args.infile)
-    line = np.asarray(model['line']).reshape(-1, 3)
+
+    line = np.asarray(io.read_json(args.line_json)).reshape(-1, 3)
     checker = JsonMultiLineChecker(
-        model['cameras'][0], model['images'],
+        model['camera'], model['images'],
         anno_points_list=[line],
         line_colors=['yellow'],
         frames_root=frames_root)
