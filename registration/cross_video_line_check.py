@@ -9,7 +9,8 @@ from libzhifan import io
 
 def parse_args():
     parser = ArgumentParser()
-    parser.add_argument('--infile', type=str)
+    parser.add_argument('--infile', type=str, help="path to transforms.json")
+    parser.add_argument('--line-data', type=str, required=True)
     parser.add_argument('--model_prefix', default='projects/json_models/')
     parser.add_argument('--model_suffix', default='_skeletons.json')
     parser.add_argument(
@@ -51,11 +52,9 @@ def main(args):
 
     # Get line drawn in common reference coordinate
     COMMON = 0
-    first_vid = model_infos[COMMON]['model_vid']
-    first_model = io.read_json(model_format % first_vid)
-    line = np.asarray(first_model['line']).reshape(-1, 3)
+    line = np.asarray(io.read_json(args.line_data)).reshape(-1, 3)
     rot, transl, scale = read_transformation(model_infos[COMMON])
-    common_line = line * scale @ rot.T + transl  # In fact identi
+    common_line = line * scale @ rot.T + transl  # In fact identity
 
     for ind, model_info in enumerate(model_infos):
         vid = model_info['model_vid']
@@ -63,25 +62,19 @@ def main(args):
         frames_root = osp.join(epic_rgb_root, vid[:3], vid)
         model = io.read_json(model_path)
 
-        # Take the common_line in common coordinate, and transform it to single model
+        # Take the ref line in ref coordinate, and (inversely) transform it to current model
         rot, transl, scale = read_transformation(model_info)
         common_line_transformed = inverse_transform_line(rot, transl, scale, common_line)
         lines_list = [common_line_transformed]
         line_colors = ['blue']
 
-        if 'line' in model:
-            line = np.asarray(model['line']).reshape(-1, 3)
-            lines_list.insert(0, line)
-            line_colors.insert(0, 'yellow')
-
         checker = JsonMultiLineChecker(
-            model['cameras'][0], model['images'],
+            model['camera'], model['images'],
             anno_points_list=lines_list,
             line_colors=line_colors,
             frames_root=frames_root)
         print(f"Writing model: {vid}")
-        checker.write_mp4(
-            radius=None, out_name=vid, fps=args.fps, out_base=out_base)
+        checker.write_mp4(radius=None, out_name=vid, fps=args.fps, out_base=out_base)
 
 
 if __name__ == '__main__':

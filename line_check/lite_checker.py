@@ -153,8 +153,8 @@ class JsonMultiLineChecker(MultiLineChecker):
 
         self.camera = CustomCamera(camera['width'], camera['height'], camera['params'])
         self.images = {
-            i: CustomImage(np.asarray(image[:4]), np.asarray(image[4:7]), image[7])
-            for i, image in enumerate(images)}
+            i: CustomImage(np.asarray(img_data[:4]), np.asarray(img_data[4:]), img_name)
+            for i, (img_name, img_data) in enumerate(images.items())}
 
         self.lines = []
         for anno_points in anno_points_list:
