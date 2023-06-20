@@ -51,6 +51,7 @@ def extract_primitives(model_dir: str) -> dict:
     for img in tqdm.tqdm(images.values()):
         image_list.append(img.qvec.tolist() + img.tvec.tolist() + [img.name])
     image_list = sorted(image_list, key=lambda x: x[-1])
+    images = {v[-1]: v[:-1] for v in image_list}  # name -> w2c
     print("Parsing points...")
     point_list = []
     for pt in tqdm.tqdm(points.values()):
@@ -58,7 +59,7 @@ def extract_primitives(model_dir: str) -> dict:
 
     ret = dict(
         camera=camera,
-        images=image_list,
+        images=images,
         points=point_list)
     return ret
 
