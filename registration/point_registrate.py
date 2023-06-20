@@ -26,26 +26,6 @@ def visualize_kps(img: np.ndarray, xys, color='red',
     return img
 
 
-def build_c2w_map(model: ColmapModel, pose_only=False):
-    """ input model is enhance with `default_vid`
-
-    key: P01_01/frame_.jpg
-        value: (4, 4) ndarray, or ColmapImage
-    """
-    mp = dict()
-    default_vid = model.default_vid
-    for img in model.ordered_images:
-        if not img.name.startswith('P'):
-            name = f'{default_vid}/{img.name}'
-        else:
-            name = img.name
-        if pose_only:
-            mp[name] = colmap_image_c2w(img)
-        else:
-            mp[name] = img
-    return mp
-
-
 def get_points(mix_model, single_model, xyz_only=True, thresh_point=1.0):
     mix_map = build_c2w_map(mix_model)
     single_map = build_c2w_map(single_model)
@@ -169,29 +149,3 @@ def find_transformation():
     s, R, t, _ = umeyama_ransac(pts_b, pts_ab, k=500, t=0.1, d=0.25)
 
     print("Generate ply")
-    
-    # os.mak
-    # _ = scn.export(osp.join( )'merg1.ply')
-
-    # print("Overlay points")
-    # img_root = '/home/skynet/Zhifan/data/epic/rgb_root/P02'
-    # for img_name in common_images:
-    #     pts_mix_i, pts_single_i = get_points_i(ab_map, b_map, img_name)
-    #     img_path = osp.join(img_root, img_name)  # key has format <vid>/<frame>.jpg so we can take as path
-    #     img = np.asarray(Image.open(img_path))
-    #     img = visualize_kps(img, ab_map[img_name].xys, color='green')  # overlay sift points
-    #     img = visualize_kps(img, project_colmap_cam(ab.camera, pts_mix_i, ab_map[img_name]))
-    #     img = visualize_kps(img, project_colmap_cam(modelb.camera, pts_single_i, b_map[img_name]))
-
-    #     pab_i, pb_i, xys_i = get_points_i(ab_map, b_map, ab, modelb, img_name)
-    #     img_path = osp.join(img_root, img_name)
-    #     img = np.asarray(Image.open(img_path))
-
-    #     # img = visualize_kps(img, xys_i, color='green', radius=1)
-    #     viz_params = dict(radius=3, thickness=2)
-    #     img = visualize_kps(
-    #         img, project_colmap_cam(modelb.camera, pb_i, b_map[img_name]),
-    #         color='yellow', **viz_params)
-    #     img = visualize_kps(
-    #         img, project_colmap_cam(ab.camera, pab_i, ab_map[img_name]),
-    #         color='blue', **viz_params)

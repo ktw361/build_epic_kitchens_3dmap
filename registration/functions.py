@@ -1,3 +1,4 @@
+from collections import namedtuple
 from typing import List, Tuple
 import os.path as osp
 import json
@@ -9,40 +10,50 @@ import cv2
 from colmap_converter.colmap_utils import Image as ColmapImage
 from colmap_converter.colmap_utils import Camera as ColmapCamera
 from lib.base_type import ColmapModel
+from lib.common_functions import colmap_image_loc
+from scipy.spatial import cKDTree
 
 from libzhifan import io
 
 
-def colmap_image_w2c(img: ColmapImage) -> np.ndarray:
-    raise DeprecationWarning('use lib.common_functions.colmap_image_w2c instead')
+def common_keypoints(kps1, kps2, thresh=0.8, debug=False):
+    """ Find commond 2D keypoints, return their indexes.
+    
+    Usage:
+        kps1 = np.float32([
+            [0, 0],
+            [1, 1],
+            [2, 5]])
+        kps2 = np.float32([
+            [0, 0.5],
+            [2, 5],
+            [1, 3],])
+        common_keypoints(kps1, kps2)
+    
+    Args:
+        kps1: (N, 2)
+        kps2: (M, 2)
+        thresh: float, in pixel.
+            e.g. the euclidean dist of (0, 0) and (0.5, 0.5) is 0.707
+    Returns:
+        idx1: (C, )
+        idx2: (C, ) 
+            index into kps1 and kps2 such that || kps1[idx1[i]] - kps2[idx2[i]] ||^2_2 < thresh
     """
-    Returns: w2c (4, 4)
-    """
-    w2c = np.eye(4)
-    w2c[:3, :3] = img.qvec2rotmat()
-    w2c[:3, 3] = img.tvec
-    return w2c
+    retVal = namedtuple('retVal', 'idx1 idx2 pts1 pts2 sum_dist avg_dist')
+    
+    tree = cKDTree(kps1)
+    dists, inds = tree.query(kps2, k=1)
+    if debug:
+        print(f'dists: {dists}')
+    keep_inds = dists < thresh
+    idx1 = inds[keep_inds]
+    idx2 = np.arange(len(kps2))[keep_inds]
 
-
-def colmap_image_c2w(img: ColmapImage) -> np.ndarray:
-    raise DeprecationWarning('use lib.common_functions.colmap_image_c2w instead')
-    """ equiv: np.linalg.inv(colmap_image_w2c(img)) 
-    Returns: c2w (4, 4)
-    """
-    c2w = np.eye(4)
-    c2w[:3, :3] = img.qvec2rotmat().T
-    c2w[:3, 3] = -img.qvec2rotmat().T @ img.tvec
-    return c2w
-
-
-def colmap_image_loc(img: ColmapImage) -> np.ndarray:
-    raise DeprecationWarning('use lib.common_functions.colmap_image_loc instead')
-    """
-    Returns: camera location (3,) of this image, in world coordinate
-    """
-    R = img.qvec2rotmat()
-    loc = -R.T @ img.tvec
-    return loc
+    sum_dists = dists[keep_inds].sum()
+    avg_dists = sum_dists / len(keep_inds)
+    retval = retVal(idx1, idx2, kps1[idx1], kps2[idx2], sum_dists, avg_dists)
+    return retval
 
 
 def project_points(pts3d: np.ndarray,

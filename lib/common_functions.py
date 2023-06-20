@@ -33,8 +33,8 @@ def colmap_image_loc(img: ColmapImage) -> np.ndarray:
     return loc
 
 
-def build_c2w_map_str(model: ColmapModel, pose_only=False):
-    """ input model is enhance with `default_vid`
+def build_c2w_map_str(model: ColmapModel, default_vid: str, pose_only=False):
+    """ 
 
     Args:
         key_type: 'name' or 'frame'
@@ -43,7 +43,6 @@ def build_c2w_map_str(model: ColmapModel, pose_only=False):
         value: (4, 4) ndarray, or ColmapImage
     """
     mp = dict()
-    default_vid = model.default_vid
     for img in model.ordered_images:
         if not img.name.startswith('P'):
             name = f'{default_vid}/{img.name}'
