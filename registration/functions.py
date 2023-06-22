@@ -154,26 +154,17 @@ def combine_two_transforms(s1, R1, t1, s2, R2, t2):
 def write_registration(filename: str, 
                        model_vid: str,
                        s: float, R: np.ndarray, t: np.ndarray):
-    has_vid = False
-    new_model_info = {
-        'model_vid': model_vid,
+    if osp.exists(filename):
+        model_infos = io.read_json(filename)
+    else:
+        model_infos = dict()
+
+    model_infos[model_vid] = {
         'scale': s,
         'rot': R.flatten().tolist(),
         'transl': t.tolist()
     }
 
-    if osp.exists(filename):
-        model_infos = io.read_json(filename)
-    else:
-        model_infos = []
-
-    for model_info in model_infos:
-        if model_info['model_vid'] == model_vid:
-            model_info.update(new_model_info)
-            has_vid = True
-            break
-    if not has_vid:
-        model_infos.append(new_model_info)
     with open(filename, 'w') as fp:
         json.dump(model_infos, fp, indent=2)
     return True

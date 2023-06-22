@@ -43,21 +43,21 @@ def inverse_transform_line(rot, transl, scale, line) -> np.ndarray:
 
 def main(args):
     epic_rgb_root = args.epic_rgb_root
-    fname_nosuffix = osp.basename(args.infile).split('.')[0]
+    fname_nosuffix = osp.dirname(osp.abspath(args.infile)).split('/')[-1]
     out_base = f'outputs/cross_line_check/{fname_nosuffix}'
     model_format = f'{args.model_prefix}%s{args.model_suffix}'  # model_format % vid
 
     with open(args.infile, 'r') as fp:
         model_infos = json.load(fp)
+    line = np.asarray(io.read_json(args.line_data)).reshape(-1, 3)
 
     # Get line drawn in common reference coordinate
-    COMMON = 0
-    line = np.asarray(io.read_json(args.line_data)).reshape(-1, 3)
-    rot, transl, scale = read_transformation(model_infos[COMMON])
+    ref_vid = list(model_infos.keys())[0]
+    rot, transl, scale = read_transformation(model_infos[ref_vid])
+    assert scale == 1.0 and np.abs(transl).sum() == 0
     common_line = line * scale @ rot.T + transl  # In fact identity
 
-    for ind, model_info in enumerate(model_infos):
-        vid = model_info['model_vid']
+    for vid, model_info in model_infos.items():
         model_path = model_format % vid
         frames_root = osp.join(epic_rgb_root, vid[:3], vid)
         model = io.read_json(model_path)

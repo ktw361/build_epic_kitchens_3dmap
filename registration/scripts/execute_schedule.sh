@@ -21,10 +21,12 @@ IMAGES_ROOT="/media/skynet/DATA/Datasets/epic-100/rgb/${KID}/"
 SKELETONS=/home/skynet/Zhifan/epic_fields_full/skeletons
 
 LOG_FILE=$PROJECT_PATH/log.txt
+rm -f $LOG_FILE
 
 echo $PROJECT_PATH
 echo $IMAGES_ROOT
 echo "REF_VID = $REF_VID"
+mkdir $PROJECT_PATH -p
 
 cp -r $SKELETONS/${REF_VID}_low/sparse/0 $PROJECT_PATH/model
 
@@ -47,7 +49,7 @@ do
         --SiftExtraction.gpu_index 0 \
         --image_path $IMAGES_ROOT \
         --image_list_path $IMAGE_LIST \
-        --ImageReader.existing_camera_id 1 > $LOG_FILE
+        --ImageReader.existing_camera_id 1 >> $LOG_FILE
 
     # Indexing will take a while, depending on the size of existing database
     # e.g. 4k images 4mins
@@ -57,11 +59,13 @@ do
         --SiftMatching.use_gpu 1 \
         --SiftMatching.gpu_index 0 \
         --VocabTreeMatching.vocab_tree_path /home/skynet/Zhifan/build_kitchens_3dmap/vocab_bins/vocab_tree_flickr100K_words256K.bin \
-        --VocabTreeMatching.match_list_path $IMAGE_LIST > $LOG_FILE
+        --VocabTreeMatching.match_list_path $IMAGE_LIST >> $LOG_FILE
 
     echo "$CUR_VID Image Registrate"
     colmap image_registrator \
         --database_path $TMP_DB_PATH \
         --input_path $PROJECT_PATH/model \
-        --output_path $PROJECT_PATH/$CUR_VID > $LOG_FILE
+        --output_path $PROJECT_PATH/$CUR_VID >> $LOG_FILE
+
+    echo "$CUR_VID Done"
 done
