@@ -76,6 +76,10 @@ def umeyama_ransac(src, dst, k, t, d: float, n=3, verbose=False):
         """
         diff = c * A @ R.T + t - B
         return np.sqrt((diff ** 2).sum(-1))
+    
+    if src.shape[0] < n:
+        print("Insufficient number of points.")
+        return None, None, None, None
 
     best_model = None
     best_err = np.inf

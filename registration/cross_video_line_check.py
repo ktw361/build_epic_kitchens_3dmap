@@ -10,7 +10,7 @@ from libzhifan import io
 def parse_args():
     parser = ArgumentParser()
     parser.add_argument('--infile', type=str, help="path to transforms.json")
-    parser.add_argument('--line-data', type=str, required=True)
+    parser.add_argument('--line-data', type=str)
     parser.add_argument('--model_prefix', default='projects/json_models/')
     parser.add_argument('--model_suffix', default='_skeletons.json')
     parser.add_argument(
