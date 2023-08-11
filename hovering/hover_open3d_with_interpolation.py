@@ -6,7 +6,7 @@ import numpy as np
 from PIL import Image
 from tqdm import tqdm
 import open3d as o3d
-from lib.base_type import JsonColmapModel
+from lib.base_type import JsonColmapModel, ColmapModel
 try:
     import ujson as json
 except ImportError:
@@ -116,7 +116,10 @@ class HoverRunner:
                 e.g. 'P34_104_out'
             scene_transform: function
         """
-        self.model = JsonColmapModel(model_path)
+        if model_path.endswith('.json'):
+            self.model = JsonColmapModel(model_path)
+        else:
+            self.model = ColmapModel(model_path)
         if pcd_model_path == None:
             pcd_model_path = model_path
             points = self.model['points']
@@ -412,42 +415,6 @@ class HoverRunner:
         clip.write_videofile(os.path.join(self.out_dir, 'out.mp4'))
 
 
-class RunP09_104(HoverRunner):
-    # model_path = '/home/skynet/Ahmad/Zhifan_visualizer/build_epic_kitchens_3dmap/colmap_models_registered/P09_104_low/'
-    model_path = '/home/skynet/Zhifan/build_epic_kitchens_3dmap/projects/json_models/P09_104_skeletons_extend.json'
-    pcd_model_path = '/home/barry/Ahmad/colmap_epic_fields/colmap_models_cloud/P09_104/dense'
-    frames_root = '/media/skynet/DATA/Datasets/epic-100/rgb/P09/P09_104/'
-    out_dir = './P09_104'
-
-    epic_img_x0 = 1450
-    background_color = [1, 1, 1, 2]  # white
-
-    point_size = 3.5
-
-    # Global
-    fov=30
-    lookat = [0, 0, 0]
-    front = [-10, 0, 30]
-    # fov=6
-    # lookat = [-4, -3, 0]
-    # front = [0, 15, 20]
-    up = [0, 0, 1]
-    def p09_transform(g):
-        t = - np.float32([0.04346319,1.05888072,2.09330869])
-        rot = o3d.geometry.get_rotation_matrix_from_xyz(
-            [-np.pi*30/180, 160*np.pi/180, 20 * np.pi / 180])
-        g = g.translate(t).rotate(rot, center=(0,0,0)).translate([0, 0, 0])
-        #g = g.translate(t).rotate(rot, center=(0,0,0)).translate([1.8, -3, 0])
-        return g
-    def __init__(self):
-        super().__init__()
-        self.setup(
-            self.model_path,
-            self.frames_root,
-            self.out_dir,
-            scene_transform=RunP09_104.p09_transform,
-            pcd_model_path=RunP09_104.pcd_model_path)
-
         
 if __name__ == '__main__':
     from argparse import ArgumentParser
@@ -456,18 +423,28 @@ if __name__ == '__main__':
     parser.add_argument('--pcd_model_path', type=str, default=None)
     parser.add_argument('--view_path', type=str, required=True, 
                         help='path to the view file, e.g. json_files/hover_viewoints/P22_115_view1.json')
+    parser.add_argument('--frames_root', type=str, default=None)
+    parser.add_argument('--out_dir', type=str, default=None)
     args = parser.parse_args()
 
     identity_transform = lambda x: x
-    vid = re.search('P\d{2}_\d{2,3}', args.model)[0]
-    kid = vid[:3]
-    frames_root = f'/media/skynet/DATA/Datasets/epic-100/rgb/{kid}/{vid}/'
+    if args.frames_root is None:
+        vid = re.search('P\d{2}_\d{2,3}', args.model)[0]
+        kid = vid[:3]
+        frames_root = f'/media/skynet/DATA/Datasets/epic-100/rgb/{kid}/{vid}/'
+    else:
+        frames_root = args.frames_root
+        assert os.path.exists(frames_root)
+    if args.out_dir is None:
+        out_dir = f'outputs/hover_{vid}'
+    else:
+        out_dir = args.out_dir
     runner = HoverRunner()
     runner.setup(
         model_path=args.model, 
         viewstatus_path=args.view_path,
         frames_root=frames_root,
-        out_dir=f'outputs/hover_{vid}',
+        out_dir=out_dir,
         scene_transform=identity_transform,
         pcd_model_path=args.pcd_model_path)
     runner.epic_img_x0 = 0
