@@ -6,7 +6,7 @@ import numpy as np
 from PIL import Image
 from tqdm import tqdm
 import open3d as o3d
-from lib.base_type import JsonColmapModel
+from lib.base_type import JsonColmapModel, ColmapModel
 try:
     import ujson as json
 except ImportError:
@@ -15,8 +15,8 @@ from open3d.visualization import rendering
 
 from colmap_converter.colmap_utils import Image as ColmapImage
 from hovering.helper import (
-    Helper, 
-    get_frustum, get_frustum_fixed, get_frustum_green, 
+    Helper,
+    get_frustum, get_frustum_fixed, get_frustum_green,
     read_original,
     get_cam_pos, get_trajectory, get_pretty_trajectory, set_offscreen_as_gui
 )
@@ -106,17 +106,20 @@ class HoverRunner:
               pcd_model_path=None):
         """
         Args:
-            model_path: 
+            model_path:
                 e.g. '/build_kitchens_3dmap/projects/ahmad/P34_104/sparse_model/' TODO: update this
             viewstatus_path:
                 path to viewstatus.json, CTRL-c output from Open3D gui
-            frames_root: 
+            frames_root:
                 e.g. '/home/skynet/Zhifan/data/epic_rgb_frames/P34/P34_104'
             out_dir:
                 e.g. 'P34_104_out'
             scene_transform: function
         """
-        self.model = JsonColmapModel(model_path)
+        if model_path.endswith('.json'):
+            self.model = JsonColmapModel(model_path)
+        else:
+            self.model = ColmapModel(model_path)
         if pcd_model_path == None:
             pcd_model_path = model_path
             points = self.model['points']
@@ -134,8 +137,8 @@ class HoverRunner:
         self.out_dir = out_dir
         self.scene_transform = scene_transform
         self.transformed_pcd = self.scene_transform(pcd)
-    
-    def test_single_frame(self, 
+
+    def test_single_frame(self,
                           psize,
                           img_id: int =None,
                           clear_geometry: bool =True,
@@ -170,8 +173,8 @@ class HoverRunner:
         else:
             test_img = self.model.get_image_by_id(img_id)
         frustum = get_frustum(
-            sz=FRUSTUM_SIZE, line_radius=FRUSTUM_LINE_RADIUS, 
-            colmap_image=test_img, 
+            sz=FRUSTUM_SIZE, line_radius=FRUSTUM_LINE_RADIUS,
+            colmap_image=test_img,
             camera_height=EPIC_HEIGHT, camera_width=EPIC_WIDTH)
         frustum = self.scene_transform(frustum)
         if show_first_frustum:
@@ -189,10 +192,10 @@ class HoverRunner:
         if lay_image:
             epic_img = read_original(
                 test_img, frame_root=self.frames_root)
-            img[self.epic_img_y0:self.epic_img_y0+EPIC_HEIGHT, 
+            img[self.epic_img_y0:self.epic_img_y0+EPIC_HEIGHT,
                 self.epic_img_x0:self.epic_img_x0+EPIC_WIDTH] = epic_img
         return img
-    
+
     def run_all_int(self):
         """ run_all() with interpolation """
         model = self.model
@@ -235,43 +238,43 @@ class HoverRunner:
                     # print(c_img.name)
                     frame_idx = int(re.search('\d{10}', c_img.name)[0])
                     frustum = get_frustum(
-                        sz=FRUSTUM_SIZE, line_radius=FRUSTUM_LINE_RADIUS, 
-                        colmap_image=c_img, camera_height=EPIC_HEIGHT, 
+                        sz=FRUSTUM_SIZE, line_radius=FRUSTUM_LINE_RADIUS,
+                        colmap_image=c_img, camera_height=EPIC_HEIGHT,
                         camera_width=EPIC_WIDTH)
                     frustum = self.scene_transform(frustum)
                     frustum_fixed = get_frustum_green(
-                        sz=FRUSTUM_SIZE, line_radius=FRUSTUM_LINE_RADIUS, 
-                        colmap_image=c_img, camera_height=EPIC_HEIGHT, 
+                        sz=FRUSTUM_SIZE, line_radius=FRUSTUM_LINE_RADIUS,
+                        colmap_image=c_img, camera_height=EPIC_HEIGHT,
                         camera_width=EPIC_WIDTH)
                     frustum_fixed = self.scene_transform(frustum_fixed)
 
                     pos_history.append(get_cam_pos(c_img))
-                    
+
                     if len(pos_history) > 2:
                         traj = get_trajectory(
-                            pos_history, num_line=traj_len, 
+                            pos_history, num_line=traj_len,
                             line_radius=TRAJECTORY_LINE_RADIUS)
                         traj = self.scene_transform(traj)
                         render.scene.add_geometry('traj', traj, red_m)
                     if  ti > 0:
                         render.scene.add_geometry('frustum2', frustum_fixed, green_m)
-                        c='green'  
+                        c='green'
                     else:
                         render.scene.add_geometry('frustum', frustum, red_m)
-                        c='red'  
+                        c='red'
                     img = render.render_to_image()
                     img = np.asarray(img)
-                    
+
                     ii = read_original(c_img, frame_root=self.frames_root)
                     img[-EPIC_HEIGHT-1:-1, self.epic_img_x0:self.epic_img_x0+EPIC_WIDTH] = ii
-                    
+
                     img_pil = Image.fromarray(img)
                     # Call draw Method to add 2D graphics in an image
                     I1 = ImageDraw.Draw(img_pil)
-                    
+
                     # Custom font style and font size
                     myFont = ImageFont.truetype('FreeMono.ttf', 65)
-                    
+
                     # Add Text to an image
                     I1.text((500, 1000), c_img.name.split('.')[0], font=myFont, fill =(0, 0, 0))
                     # define the bbox coordinates (left, top, right, bottom)
@@ -279,7 +282,7 @@ class HoverRunner:
                     # draw the bbox
                     #draw.rectangle(bbox, outline='red', width=5)
                     I1.rectangle(bbox2, outline=c, width=5)
-                            
+
                     img_pil.save(fmt % frame_idx)
                     # o3d.io.write_image(fmt % frame_idx, img, 9)
 
@@ -306,42 +309,45 @@ class HoverRunner:
         traj_len = 40
         pos_history = []
         for img_id in tqdm(self.model.ordered_image_ids[::10]):
-            
+
             c_img = model.get_image_by_id(img_id)
             frame_idx = int(re.search('\d{10}', c_img.name)[0])
             frustum = get_frustum(
-                sz=FRUSTUM_SIZE, line_radius=FRUSTUM_LINE_RADIUS, 
-                colmap_image=c_img, camera_height=EPIC_HEIGHT, 
+                sz=FRUSTUM_SIZE, line_radius=FRUSTUM_LINE_RADIUS,
+                colmap_image=c_img, camera_height=EPIC_HEIGHT,
                 camera_width=EPIC_WIDTH)
             frustum = self.scene_transform(frustum)
             pos_history.append(get_cam_pos(c_img))
-            
+
             frustum_fixed = get_frustum_fixed(
-                sz=FRUSTUM_SIZE, line_radius=FRUSTUM_LINE_RADIUS, 
-                colmap_image=c_img, camera_height=EPIC_HEIGHT, 
+                sz=FRUSTUM_SIZE, line_radius=FRUSTUM_LINE_RADIUS,
+                colmap_image=c_img, camera_height=EPIC_HEIGHT,
                 camera_width=EPIC_WIDTH)
-                
+
             frustum_fixed = self.scene_transform(frustum_fixed)
-            
+
             if len(pos_history) > 2:
-                lines = get_pretty_trajectory(
-                    pos_history, num_line=traj_len, 
-                    line_radius=0.08,
-                    darkness=0.4)
-                for i, line in enumerate(lines):
-                    line = self.scene_transform(line)
-                    geom_name = f'line_{i}'
-                    if render.scene.has_geometry(geom_name):
-                        render.scene.remove_geometry(geom_name)
-                    render.scene.add_geometry(f'line_{i}', line, white_m)
+                # lines = get_pretty_trajectory(
+                traj = get_trajectory(
+                    pos_history, num_line=traj_len,
+                    line_radius=0.08)
+                if render.scene.has_geometry('traj'):
+                    render.scene.remove_geometry('traj')
+                render.scene.add_geometry('traj', traj, white_m)
+                # for i, line in enumerate(lines):
+                #     line = self.scene_transform(line)
+                #     geom_name = f'line_{i}'
+                #     if render.scene.has_geometry(geom_name):
+                #         render.scene.remove_geometry(geom_name)
+                #     render.scene.add_geometry(f'line_{i}', line, white_m)
             render.scene.add_geometry('frustum', frustum, red_m)
             ####render.scene.add_geometry('frustum2', frustum_fixed, green_m)
             img = render.render_to_image()
             img = np.asarray(img)
-            
+
             ii = read_original(c_img, frame_root=self.frames_root)
             img[-EPIC_HEIGHT-1:-1, self.epic_img_x0:self.epic_img_x0+EPIC_WIDTH] = ii
-            
+
             # capture the screen and convert to PIL image
             img_pil = Image.fromarray(img)
             I1 = ImageDraw.Draw(img_pil)
@@ -351,7 +357,6 @@ class HoverRunner:
             I1.rectangle(bbox2, outline='red', width=5)
             img_pil.save(fmt % frame_idx)
 
-            render.scene.remove_geometry('traj')
             render.scene.remove_geometry('frustum')
             render.scene.remove_geometry('frustum2')
 
@@ -361,7 +366,7 @@ class HoverRunner:
         seq = sorted(glob.glob(os.path.join(self.out_dir, '*.jpg')))
         clip = editor.ImageSequenceClip(seq, fps=video_fps)
         clip.write_videofile(os.path.join(self.out_dir, 'out.mp4'))
-    
+
     def run_circulating(self, num_loop=2, Radius=14.142, Height=20):
         num_imgs = len(self.model.ordered_image_ids)
         theta = np.linspace(0, num_loop*2*np.pi, num_imgs)
@@ -382,26 +387,26 @@ class HoverRunner:
         for front, img_id in tqdm(
             zip(fronts, self.model.ordered_image_ids),
             total=len(fronts)):
-            
+
             c_img = model.get_image_by_id(img_id)
             frame_idx = int(re.search('\d{10}', c_img.name)[0])
             pos_history.append(get_cam_pos(c_img))
-            
+
             if len(pos_history) >= 2:
                 traj = get_trajectory(
-                    pos_history, num_line=traj_len, 
+                    pos_history, num_line=traj_len,
                     line_radius=TRAJECTORY_LINE_RADIUS)
                 traj = self.scene_transform(traj)
             else:
                 traj = None
-            
+
             img = self.singel_frame_with_front(
                 front=front, img_id=img_id, traj=traj)
             img = np.asarray(img)
-            
+
             ii = read_original(c_img, frame_root=self.frames_root)
             img[-EPIC_HEIGHT:, self.epic_img_x0:self.epic_img_x0+EPIC_WIDTH] = ii
-            
+
             Image.fromarray(img).save(fmt % frame_idx)
 
         # Gen output
@@ -412,62 +417,36 @@ class HoverRunner:
         clip.write_videofile(os.path.join(self.out_dir, 'out.mp4'))
 
 
-class RunP09_104(HoverRunner):
-    # model_path = '/home/skynet/Ahmad/Zhifan_visualizer/build_epic_kitchens_3dmap/colmap_models_registered/P09_104_low/'
-    model_path = '/home/skynet/Zhifan/build_epic_kitchens_3dmap/projects/json_models/P09_104_skeletons_extend.json'
-    pcd_model_path = '/home/barry/Ahmad/colmap_epic_fields/colmap_models_cloud/P09_104/dense'
-    frames_root = '/media/skynet/DATA/Datasets/epic-100/rgb/P09/P09_104/'
-    out_dir = './P09_104'
 
-    epic_img_x0 = 1450
-    background_color = [1, 1, 1, 2]  # white
-
-    point_size = 3.5
-
-    # Global
-    fov=30
-    lookat = [0, 0, 0]
-    front = [-10, 0, 30]
-    # fov=6
-    # lookat = [-4, -3, 0]
-    # front = [0, 15, 20]
-    up = [0, 0, 1]
-    def p09_transform(g):
-        t = - np.float32([0.04346319,1.05888072,2.09330869])
-        rot = o3d.geometry.get_rotation_matrix_from_xyz(
-            [-np.pi*30/180, 160*np.pi/180, 20 * np.pi / 180])
-        g = g.translate(t).rotate(rot, center=(0,0,0)).translate([0, 0, 0])
-        #g = g.translate(t).rotate(rot, center=(0,0,0)).translate([1.8, -3, 0])
-        return g
-    def __init__(self):
-        super().__init__()
-        self.setup(
-            self.model_path,
-            self.frames_root,
-            self.out_dir,
-            scene_transform=RunP09_104.p09_transform,
-            pcd_model_path=RunP09_104.pcd_model_path)
-
-        
 if __name__ == '__main__':
     from argparse import ArgumentParser
     parser = ArgumentParser()
     parser.add_argument('--model', type=str)
     parser.add_argument('--pcd_model_path', type=str, default=None)
-    parser.add_argument('--view_path', type=str, required=True, 
+    parser.add_argument('--view_path', type=str, required=True,
                         help='path to the view file, e.g. json_files/hover_viewoints/P22_115_view1.json')
+    parser.add_argument('--frames_root', type=str, default=None)
+    parser.add_argument('--out_dir', type=str, default=None)
     args = parser.parse_args()
 
     identity_transform = lambda x: x
-    vid = re.search('P\d{2}_\d{2,3}', args.model)[0]
-    kid = vid[:3]
-    frames_root = f'/media/skynet/DATA/Datasets/epic-100/rgb/{kid}/{vid}/'
+    if args.frames_root is None:
+        vid = re.search('P\d{2}_\d{2,3}', args.model)[0]
+        kid = vid[:3]
+        frames_root = f'/media/skynet/DATA/Datasets/epic-100/rgb/{kid}/{vid}/'
+    else:
+        frames_root = args.frames_root
+        assert os.path.exists(frames_root)
+    if args.out_dir is None:
+        out_dir = f'outputs/hover_{vid}'
+    else:
+        out_dir = args.out_dir
     runner = HoverRunner()
     runner.setup(
-        model_path=args.model, 
+        model_path=args.model,
         viewstatus_path=args.view_path,
         frames_root=frames_root,
-        out_dir=f'outputs/hover_{vid}',
+        out_dir=out_dir,
         scene_transform=identity_transform,
         pcd_model_path=args.pcd_model_path)
     runner.epic_img_x0 = 0
