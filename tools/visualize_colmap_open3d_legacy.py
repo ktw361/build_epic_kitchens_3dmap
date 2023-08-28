@@ -3,6 +3,7 @@ import numpy as np
 from argparse import ArgumentParser
 import json
 from lib.base_type import ColmapModel
+from tools.visualise_data_open3d import get_c2w, get_frustum
 
 """TODO
 1. Frustum, on/off
@@ -13,6 +14,8 @@ def parse_args():
     parser = ArgumentParser()
     parser.add_argument('--model')
     parser.add_argument('--line')
+    parser.add_argument('--show-mesh-frame', default=False)
+    parser.add_argument('--specify-frame-name', default=None)
     return parser.parse_args()
 
 if __name__ == "__main__":
@@ -35,7 +38,16 @@ if __name__ == "__main__":
     vis = o3d.visualization.Visualizer()
     vis.create_window()
     vis.add_geometry(pcd, reset_bounding_box=True)
-    # vis.add_geometry(mesh_frame, reset_bounding_box=True)
+    if args.show_mesh_frame:
+        vis.add_geometry(mesh_frame, reset_bounding_box=True)
+
+    if args.specify_frame_name is not None:
+        qvec, tvec = [
+            (v.qvec, v.tvec) for k, v in mod.images.items() if v.name == args.specify_frame_name][0]
+        img_data = [qvec[0], qvec[1], qvec[2], qvec[3], tvec[0], tvec[1], tvec[2]]
+        c2w = get_c2w(img_data)
+        frustum = get_frustum(c2w, sz=0.1, camera_height=256, camera_width=256)
+        vis.add_geometry(frustum, reset_bounding_box=True)
 
     if args.line is not None:
         line_set = o3d.geometry.LineSet()

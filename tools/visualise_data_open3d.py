@@ -11,7 +11,9 @@ def parse_args():
     parser.add_argument('--json-data', help='path to json data', required=True)
     parser.add_argument('--line-data', help='path to line data', default=None)
     parser.add_argument('--pcd-path', help='path to alternative point cloud data', default=None)
-    parser.add_argument('--num-display-poses', type=int, default=500, 
+    parser.add_argument('--show-mesh-frame', default=False)
+    parser.add_argument('--specify-frame-name', default=None)
+    parser.add_argument('--num-display-poses', type=int, default=500,
         help='randomly display num-display-poses to avoid creating too many poses')
     parser.add_argument('--frustum-size', type=float, default=0.1)
     return parser.parse_args()
@@ -35,7 +37,7 @@ def get_c2w(img_data: list) -> np.ndarray:
     """
     Args:
         img_data: list, [qvec, tvec] of w2c
-    
+
     Returns:
         c2w: np.ndarray, 4x4 camera-to-world matrix
     """
@@ -47,7 +49,7 @@ def get_c2w(img_data: list) -> np.ndarray:
 
 
 def get_frustum(c2w: np.ndarray,
-                sz=0.2, 
+                sz=0.2,
                 camera_height=None,
                 camera_width=None,
                 frustum_color=[1, 0, 0]) -> o3d.geometry.LineSet:
@@ -88,10 +90,12 @@ if __name__ == "__main__":
 
     vis = o3d.visualization.Visualizer()
     vis.create_window()
+    mesh_frame = o3d.geometry.TriangleMesh.create_coordinate_frame(
+        size=10, origin=[0, 0, 0])
 
     with open(args.json_data, 'r') as f:
         model = json.load(f)
-    
+
     if args.pcd_path is not None:
         pcd_path = args.pcd_path
         assert pcd_path.endswith('.ply')
@@ -104,6 +108,8 @@ if __name__ == "__main__":
         pcd.points = o3d.utility.Vector3dVector(pcd_np)
         pcd.colors = o3d.utility.Vector3dVector(pcd_rgb)
     vis.add_geometry(pcd, reset_bounding_box=True)
+    if args.show_mesh_frame:
+        vis.add_geometry(mesh_frame, reset_bounding_box=True)
 
     camera = model['camera']
     cam_h, cam_w = camera['height'], camera['width']
@@ -111,11 +117,17 @@ if __name__ == "__main__":
     c2w_sel_inds = np.random.choice(
         len(c2w_list), min(len(c2w_list), args.num_display_poses), replace=False)
     c2w_sel = [c2w_list[i] for i in c2w_sel_inds]
-    frustums = [
-        get_frustum(c2w, sz=frustum_size, camera_height=cam_h, camera_width=cam_w) 
-        for c2w in c2w_sel
-    ]
-    for frustum in frustums:
+    if args.specify_frame_name is None:
+        frustums = [
+            get_frustum(c2w, sz=frustum_size, camera_height=cam_h, camera_width=cam_w)
+            for c2w in c2w_sel
+        ]
+        for frustum in frustums:
+            vis.add_geometry(frustum, reset_bounding_box=True)
+    else:
+        frame_name = args.specify_frame_name
+        c2w = get_c2w(model['images'][frame_name])
+        frustum = get_frustum(c2w, sz=frustum_size, camera_height=cam_h, camera_width=cam_w)
         vis.add_geometry(frustum, reset_bounding_box=True)
 
     if args.line_data is not None:
