@@ -1,4 +1,10 @@
+# TODO: Need to re-run
+
+- P11_104
+
 # Colmap pipeline
+
+- Reconstruction & Dense Registration results: https://docs.google.com/spreadsheets/d/1Q_F_B4BJB3LwovcoN12adOYdwcpHtSLCO48s0z8Csw8/edit#gid=0
 
 # Config files
 

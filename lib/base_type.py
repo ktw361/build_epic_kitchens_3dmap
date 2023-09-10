@@ -57,13 +57,17 @@ class ColmapModel:
 
 
 class JsonColmapModel:
-    def __init__(self, json_path):
-        self.json_path = json_path
-        with open(json_path) as f:
-            model = json.load(f)
+    def __init__(self, json_path_or_dict):
+        if isinstance(json_path_or_dict, str):
+            with open(json_path_or_dict) as f:
+                model = json.load(f)
+        elif isinstance(json_path_or_dict, dict):
+            model = json_path_or_dict
         self.camera = model['camera']
         self.points = model['points']
-        self.images = sorted(model['images'], key=lambda x: x[-1])  # qw, qx, qy, qz, tx, ty, tz, frame_name
+        self.images = [
+            model['images'][k] + [k] for k in sorted(model['images'].keys())
+            ] # qw, qx, qy, qz, tx, ty, tz, frame_name
     
     @property
     def ordered_image_ids(self):
@@ -79,4 +83,3 @@ class JsonColmapModel:
             id=image_id, qvec=img_info[:4], tvec=img_info[4:7], camera_id=0, 
             name=img_info[7], xys=[], point3D_ids=[])
         return cimg
-
