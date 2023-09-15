@@ -51,7 +51,7 @@ class HoverRunner:
     front = None
     up = None
 
-    epic_img_x0 = 800
+    epic_img_x0 = 0
     epic_img_y0 = 0
     background_color = [1, 1, 1, 2]  # white;  [1, 1, 1, 0] for black
 
@@ -99,6 +99,11 @@ class HoverRunner:
         self.frames_root = frames_root
         self.out_dir = out_dir
         self.transformed_pcd = pcd  # The `transformed` name is legacy, it's not actually being tranfromed.
+    
+    def resetup(self, model, frames_root, out_dir):
+        self.model = model
+        self.frames_root = frames_root
+        self.out_dir = out_dir
 
     def test_single_frame(self,
                           psize,
@@ -215,7 +220,7 @@ class HoverRunner:
         print("Generating video...")
         seq = sorted(glob.glob(os.path.join(self.out_dir, '*.jpg')))
         clip = editor.ImageSequenceClip(seq, fps=video_fps)
-        clip.write_videofile(os.path.join(self.out_dir, 'out.mp4'))
+        clip.write_videofile(os.path.join(self.out_dir, f'out-step{step_size}-fps{fps}.mp4'))
     
 
 if __name__ == '__main__':
@@ -225,8 +230,16 @@ if __name__ == '__main__':
     identity_transform = lambda x: x
 
     # vid = re.search('P\d{2}_\d{2,3}', args.model)[0]
+    runner = HoverRunner()
+    runner.setup(
+        model=None,
+        viewstatus_path=args.view_path,
+        frames_root=None,
+        out_dir=None,
+        pcd_model_path=args.pcd_model_path)
+
     transforms = io.read_json(args.infile)
-    for vid in transforms.keys():
+    for vid in sorted(transforms.keys()):
         scale = transforms[vid]['scale']
         rot = np.asarray(transforms[vid]['rot']).reshape(3, 3)
         transl = np.asarray(transforms[vid]['transl'])
@@ -244,15 +257,7 @@ if __name__ == '__main__':
             json_data['images'][k] = im.tolist()
         json_model = JsonColmapModel(json_data)
 
-        runner = HoverRunner()
-        runner.setup(
-            model=json_model,
-            viewstatus_path=args.view_path,
-            frames_root=frames_root,
-            out_dir=out_dir,
-            pcd_model_path=args.pcd_model_path)
-        runner.epic_img_x0 = 0
-        runner.epic_img_y0 = 0
+        runner.resetup(json_model, frames_root, out_dir)
         runner.test_single_frame(0.2, show_first_frustum=False)
         print(f"Running {vid}")
-        runner.run_all(step_size=5, fps=20)
+        runner.run_all(step_size=3, fps=20)
