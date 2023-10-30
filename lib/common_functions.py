@@ -55,15 +55,18 @@ def build_c2w_map_str(model: ColmapModel, default_vid: str, pose_only=False):
     return mp
 
 
-def build_c2w_map_int(model, pose_only=False):
+def build_c2w_map_int(model, pose_only=False, regex='\d{10,}'):
     """ This is for single video only
 
     key: frame number in int-type
     value: (4, 4) ndarray, or ColmapImage
+
+    Args:
+        regex: by default use epic 10-digit frames
     """
     mp = dict()
     for img in model.ordered_images:
-        frame = int(re.search('\d{10,}', img.name)[0])
+        frame = int(re.search(regex, img.name)[0])
         if pose_only:
             mp[frame] = colmap_image_c2w(img)
         else:
